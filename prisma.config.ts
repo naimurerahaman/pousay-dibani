@@ -10,6 +10,11 @@ export default defineConfig({
     // Read lazily so the config can load even when DATABASE_URL isn't
     // set in the environment (e.g. during `prisma generate` from `postinstall`
     // on a fresh Vercel deploy before env vars are injected).
-    url: process.env.DATABASE_URL ?? "",
+    url:
+      [
+        process.env.DATABASE_URL,
+        process.env.POSTGRES_PRISMA_URL,
+        process.env.POSTGRES_URL,
+      ].find((value) => value?.trim()) ?? "",
   },
 });

@@ -16,6 +16,7 @@ dist
 # env
 .env
 .env*.local
+.env.local-backup
 
 # logs
 npm-debug.log*
@@ -26,3 +27,5 @@ pnpm-debug.log*
 # system
 .DS_Store
 Thumbs.db
+
+.vercel

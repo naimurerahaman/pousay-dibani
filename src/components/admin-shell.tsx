@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import type { Route } from "next";
 import {
   BarChart3,
@@ -12,7 +13,7 @@ import {
   Package,
   Tag,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useTransition, type ReactNode } from "react";
 
 type NavItem = {
   href: Route;
@@ -36,6 +37,13 @@ type AdminShellProps = {
 
 export function AdminShell({ adminName, adminEmail, children }: AdminShellProps) {
   const pathname = usePathname();
+  const [isSigningOut, startSignOut] = useTransition();
+
+  function handleSignOut() {
+    startSignOut(() => {
+      void signOut({ callbackUrl: "/admin/login" });
+    });
+  }
 
   return (
     <div className="admin-shell">
@@ -76,12 +84,15 @@ export function AdminShell({ adminName, adminEmail, children }: AdminShellProps)
             <strong>{adminName}</strong>
             <p className="muted">{adminEmail}</p>
           </div>
-          <form action="/api/auth/signout" method="post">
-            <button className="button-ghost" type="submit">
-              <LogOut size={16} aria-hidden="true" />
-              Sign out
-            </button>
-          </form>
+          <button
+            className="button-ghost"
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+          >
+            <LogOut size={16} aria-hidden="true" />
+            {isSigningOut ? "Signing out..." : "Sign out"}
+          </button>
         </div>
       </aside>
 
