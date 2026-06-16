@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(npm ls:*)",
+      "WebFetch(domain:www.prisma.io)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/pousay_dibani?schema=public\" npx prisma generate)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)",
+      "Bash(taskkill:*)",
+      "Bash(cmd //c \"taskkill /PID 18644 /F\")"
+    ]
+  }
+}
