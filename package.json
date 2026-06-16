@@ -5,14 +5,17 @@
   "description": "Khulna city home delivery service for everyday goods and products.",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "prisma:generate": "dotenv -e .env -- prisma generate",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
     "prisma:migrate": "dotenv -e .env -- prisma migrate dev",
     "prisma:seed": "dotenv -e .env -- prisma db seed",
-    "prisma:studio": "dotenv -e .env -- prisma studio"
+    "prisma:studio": "dotenv -e .env -- prisma studio",
+    "smoke": "node scripts/smoke-test.mjs"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

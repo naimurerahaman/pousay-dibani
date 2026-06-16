@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { assertProductionEnv, getSecureCookiesEnabled } from "@/lib/env";
 
 declare module "next-auth" {
   interface Session {
@@ -29,12 +30,32 @@ const credentialsSchema = z.object({
   password: z.string().min(1, "Enter your password."),
 });
 
+const secureCookies = getSecureCookiesEnabled();
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
-  session: { strategy: "jwt" },
+  secret: process.env.AUTH_SECRET,
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 8, // 8 hours
+  },
   pages: {
     signIn: "/admin/login",
   },
+  useSecureCookies: secureCookies,
+  cookies: secureCookies
+    ? {
+        sessionToken: {
+          name: "__Secure-auth.session-token",
+          options: {
+            httpOnly: true,
+            sameSite: "lax",
+            path: "/",
+            secure: true,
+          },
+        },
+      }
+    : undefined,
   providers: [
     Credentials({
       name: "Credentials",
@@ -43,6 +64,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(rawCredentials) {
+        // Production env check fires on first sign-in, not at module load
+        // (so `next build` doesn't try to validate placeholder secrets).
+        assertProductionEnv();
+
         const parsed = credentialsSchema.safeParse(rawCredentials);
         if (!parsed.success) {
           return null;
@@ -79,6 +104,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token }) {
+      assertProductionEnv();
       if (token && session.user) {
         session.user.id = token.id ?? "";
         session.user.role = token.role ?? "STAFF";

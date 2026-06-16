@@ -216,18 +216,7 @@ const deliveryAreas: DeliveryAreaSeed[] = [
   },
 ];
 
-async function main() {
-  const connectionString = process.env.DATABASE_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "DATABASE_URL is not set. Copy .env.example to .env and provide a real PostgreSQL connection string.",
-    );
-  }
-
-  const adapter = new PrismaPg(connectionString);
-  const prisma = new PrismaClient({ adapter });
-
+async function seedCatalog(prisma: PrismaClient) {
   console.log("Seeding categories...");
   for (const category of categories) {
     await prisma.category.upsert({
@@ -276,45 +265,95 @@ async function main() {
     });
   }
 
+  return {
+    categories: categories.length,
+    products: products.length,
+    deliveryAreas: deliveryAreas.length,
+  };
+}
+
+async function seedAdmin(prisma: PrismaClient) {
   const adminEmail = (process.env.ADMIN_EMAIL ?? "").trim().toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD ?? "";
 
-  if (adminEmail && adminPassword) {
-    console.log("Seeding admin user...");
-    const passwordHash = await bcrypt.hash(adminPassword, 10);
-    const existingAdmin = await prisma.adminUser.findUnique({
-      where: { email: adminEmail },
-    });
-    if (existingAdmin) {
-      await prisma.adminUser.update({
-        where: { email: adminEmail },
-        data: {
-          name: "Pousay Dibani Admin",
-          passwordHash,
-          role: "OWNER",
-        },
-      });
-      console.log(`  Updated existing admin: ${adminEmail}`);
-    } else {
-      await prisma.adminUser.create({
-        data: {
-          name: "Pousay Dibani Admin",
-          email: adminEmail,
-          passwordHash,
-          role: "OWNER",
-        },
-      });
-      console.log(`  Created admin: ${adminEmail}`);
-    }
-  } else {
+  if (!adminEmail || !adminPassword) {
     console.log(
       "  Skipping admin user: set ADMIN_EMAIL and ADMIN_PASSWORD to seed one.",
     );
+    return { admin: 0 };
   }
 
-  console.log(
-    `Seed complete: ${categories.length} categories, ${products.length} products, ${deliveryAreas.length} delivery areas.`,
-  );
+  console.log("Seeding admin user...");
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
+  const existingAdmin = await prisma.adminUser.findUnique({
+    where: { email: adminEmail },
+  });
+  if (existingAdmin) {
+    await prisma.adminUser.update({
+      where: { email: adminEmail },
+      data: {
+        name: "Pousay Dibani Admin",
+        passwordHash,
+        role: "OWNER",
+      },
+    });
+    console.log(`  Updated existing admin: ${adminEmail}`);
+  } else {
+    await prisma.adminUser.create({
+      data: {
+        name: "Pousay Dibani Admin",
+        email: adminEmail,
+        passwordHash,
+        role: "OWNER",
+      },
+    });
+    console.log(`  Created admin: ${adminEmail}`);
+  }
+
+  return { admin: 1 };
+}
+
+async function main() {
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL is not set. Copy .env.example to .env and provide a real PostgreSQL connection string.",
+    );
+  }
+
+  const adapter = new PrismaPg(connectionString);
+  const prisma = new PrismaClient({ adapter });
+
+  // Modes:
+  //   default  -> full seed (categories, products, areas, admin)
+  //   "admin"  -> only the admin user
+  //   "catalog"-> only the catalog + delivery areas (no admin)
+  const mode = (process.argv[2] ?? "all").toLowerCase();
+
+  let counts: { categories?: number; products?: number; deliveryAreas?: number; admin?: number } = {};
+
+  if (mode === "admin") {
+    counts = await seedAdmin(prisma);
+  } else if (mode === "catalog") {
+    counts = await seedCatalog(prisma);
+  } else if (mode === "all" || mode === undefined) {
+    counts = await seedCatalog(prisma);
+    counts = { ...counts, ...(await seedAdmin(prisma)) };
+  } else {
+    throw new Error(`Unknown seed mode: ${mode}. Use: all, admin, catalog.`);
+  }
+
+  const summary = [
+    counts.categories !== undefined ? `${counts.categories} categories` : null,
+    counts.products !== undefined ? `${counts.products} products` : null,
+    counts.deliveryAreas !== undefined ? `${counts.deliveryAreas} delivery areas` : null,
+    counts.admin !== undefined ? `${counts.admin} admin` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  console.log(`Seed complete (mode=${mode}): ${summary || "no changes"}.`);
 
   await prisma.$disconnect();
 }

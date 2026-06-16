@@ -3,6 +3,7 @@
 import { LogIn } from "lucide-react";
 import { FormEvent, useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
+import { checkLoginRateLimit } from "@/lib/auth-actions";
 
 type AdminLoginFormProps = {
   callbackUrl: string;
@@ -22,6 +23,12 @@ export function AdminLoginForm({ callbackUrl, initialError }: AdminLoginFormProp
     const password = String(formData.get("password") ?? "");
 
     startTransition(async () => {
+      const gate = await checkLoginRateLimit();
+      if (!gate.ok) {
+        setError(gate.error);
+        return;
+      }
+
       const result = await signIn("credentials", {
         email,
         password,
