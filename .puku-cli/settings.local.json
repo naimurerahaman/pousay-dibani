@@ -10,7 +10,18 @@
       "Bash(netstat -ano)",
       "Bash(findstr :3000)",
       "Bash(taskkill:*)",
-      "Bash(cmd //c \"taskkill /PID 18644 /F\")"
+      "Bash(cmd //c \"taskkill /PID 18644 /F\")",
+      "Bash(node:*)",
+      "Bash($env:DATABASE_URL=\"postgresql://postgres.frlkugrfhoppbwkalbpl:EMCEEemn%232020@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres\")",
+      "Bash(npx prisma:*)",
+      "Bash(set DATABASE_URL=postgresql://postgres.frlkugrfhoppbwkalbpl:EMCEEemn%232020@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres)",
+      "Bash(export DATABASE_URL=\"postgresql://postgres.frlkugrfhoppbwkalbpl:EMCEEemn%232020@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres\")",
+      "Bash(env)",
+      "Bash(echo \"EXIT=$?\")",
+      "Read(//tmp/**)",
+      "Bash(dotenv:*)",
+      "Bash(node_modules/.bin/dotenv --help)",
+      "Bash(node_modules/.bin/dotenv -e .env -- npx prisma migrate deploy 2>&1)"
     ]
   }
 }
