@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, PackageCheck } from "lucide-react";
+import { PackageCheck } from "lucide-react";
 import { CartLink } from "@/components/cart-link";
+import { NavAreaButton } from "@/components/nav-area-button";
+import type { LocationPickerOption } from "@/components/location-picker";
 
-export function SiteHeader() {
+type SiteHeaderProps = {
+  deliveryAreas: LocationPickerOption[];
+};
+
+export function SiteHeader({ deliveryAreas }: SiteHeaderProps) {
   const pathname = usePathname();
 
   if (pathname.startsWith("/admin")) {
@@ -21,9 +27,7 @@ export function SiteHeader() {
           </span>
           <span className="brand__copy">
             <span className="brand__name">Pousay Dibani</span>
-            <span className="brand__area">
-              <MapPin size={13} aria-hidden="true" /> Khulna city
-            </span>
+            <NavAreaButton areas={deliveryAreas} />
           </span>
         </Link>
 

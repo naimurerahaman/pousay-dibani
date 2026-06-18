@@ -29,3 +29,9 @@ export type CartItem = {
   imageUrl: string;
   quantity: number;
 };
+
+export type DeliveryAreaOption = {
+  slug: string;
+  name: string;
+  deliveryFee: number;
+};

@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import { MapPin } from "lucide-react";
 import { useCartItems } from "@/hooks/use-cart-items";
+import { useSavedDeliveryArea } from "@/hooks/use-saved-delivery-area";
+import { clearSavedDeliveryArea } from "@/lib/delivery-area-pref";
 import { CART_STORAGE_KEY, getCartSubtotal } from "@/lib/cart";
 import { formatTaka } from "@/lib/format";
 import { formatPhone } from "@/lib/orders";
 import { placeOrder } from "@/lib/order-actions";
 import { OrderSummary, type OrderSummaryView } from "@/components/order-summary";
-
-type DeliveryAreaOption = {
-  slug: string;
-  name: string;
-  deliveryFee: number;
-};
+import type { DeliveryAreaOption } from "@/lib/types";
 
 type CheckoutFormProps = {
   areas: DeliveryAreaOption[];
@@ -55,6 +53,7 @@ function buildOrderSummaryFromCart(
 
 export function CheckoutForm({ areas }: CheckoutFormProps) {
   const items = useCartItems();
+  const savedArea = useSavedDeliveryArea();
   const [isPending, startTransition] = useTransition();
   const [confirmedOrder, setConfirmedOrder] = useState<OrderSummaryView | null>(
     null,
@@ -63,6 +62,20 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const subtotal = useMemo(() => getCartSubtotal(items), [items]);
+  const activeMatchedArea = savedArea
+    ? areas.find((area) => area.slug === savedArea.slug) ?? null
+    : null;
+  const isStaleSavedArea = Boolean(savedArea) && activeMatchedArea === null;
+  const matchedArea = activeMatchedArea;
+  const deliveryFee = activeMatchedArea?.deliveryFee ?? 0;
+
+  // If the saved area is no longer active on the server, drop it from
+  // local storage so the navbar / next visit prompts for a fresh pick.
+  useEffect(() => {
+    if (isStaleSavedArea) {
+      clearSavedDeliveryArea();
+    }
+  }, [isStaleSavedArea]);
 
   function clearCart() {
     window.localStorage.removeItem(CART_STORAGE_KEY);
@@ -81,9 +94,11 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
     const deliveryAreaSlug = String(formData.get("area") ?? "").trim();
     const notes = String(formData.get("notes") ?? "").trim() || undefined;
 
-    const matchedArea = areas.find((area) => area.slug === deliveryAreaSlug);
-    if (!matchedArea) {
-      setFieldErrors({ deliveryArea: "Please choose a supported delivery area." });
+    const submittedArea = areas.find((area) => area.slug === deliveryAreaSlug);
+    if (!submittedArea) {
+      setFieldErrors({
+        deliveryArea: "Please pick a delivery area from the navigation before placing your order.",
+      });
       return;
     }
 
@@ -114,8 +129,8 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
           customerName,
           customerPhone,
           deliveryAddress,
-          matchedArea.name,
-          matchedArea.deliveryFee,
+          submittedArea.name,
+          submittedArea.deliveryFee,
           notes,
           items,
         ),
@@ -171,6 +186,18 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
 
         {error ? <div className="form-banner">{error}</div> : null}
 
+        {!matchedArea ? (
+          <div className="form-banner" role="status">
+            Please choose a delivery area from the navigation before placing your
+            order.
+          </div>
+        ) : isStaleSavedArea ? (
+          <div className="form-banner" role="status">
+            Your previously saved area is no longer available. Pick a new
+            delivery area from the navigation.
+          </div>
+        ) : null}
+
         <div className="form-grid">
           <label className="field">
             <span>Name</span>
@@ -202,27 +229,31 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
               <span className="field-error">{fieldErrors.customerPhone}</span>
             ) : null}
           </label>
-          <label className="field">
+          <div className="field">
             <span>Area</span>
-            <select
-              name="area"
-              required
-              defaultValue=""
-              aria-invalid={Boolean(fieldErrors.deliveryArea)}
-            >
-              <option value="" disabled>
-                Select area
-              </option>
-              {areas.map((area) => (
-                <option key={area.slug} value={area.slug}>
-                  {area.name} (৳{area.deliveryFee})
-                </option>
-              ))}
-            </select>
-            {fieldErrors.deliveryArea ? (
-              <span className="field-error">{fieldErrors.deliveryArea}</span>
-            ) : null}
-          </label>
+            {matchedArea ? (
+              <>
+                <input type="hidden" name="area" value={matchedArea.slug} />
+                <div className="locked-area" aria-live="polite">
+                  <MapPin size={16} aria-hidden="true" />
+                  <span>
+                    <strong>{matchedArea.name}</strong>
+                    <span className="muted">
+                      {" "}
+                      — Delivery fee {formatTaka(matchedArea.deliveryFee)}
+                    </span>
+                  </span>
+                </div>
+                <span className="field-hint">
+                  Update this from the navigation if you need a different area.
+                </span>
+              </>
+            ) : (
+              <span className="field-error">
+                {fieldErrors.deliveryArea ?? "No delivery area selected."}
+              </span>
+            )}
+          </div>
           <label className="field">
             <span>Payment</span>
             <select name="payment" defaultValue="cod" disabled>
@@ -256,7 +287,7 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
         <button
           className="button"
           type="submit"
-          disabled={isPending || items.length === 0}
+          disabled={isPending || items.length === 0 || !matchedArea}
         >
           {isPending ? "Placing order…" : "Place order"}
         </button>
@@ -277,15 +308,22 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
           <strong>{formatTaka(subtotal)}</strong>
         </div>
         <div className="summary-line">
-          <span>Delivery fee</span>
-          <strong>{formatTaka(60)}</strong>
+          <span>
+            Delivery fee
+            {matchedArea ? (
+              <span className="muted" style={{ marginLeft: 6, fontSize: "0.8rem" }}>
+                to {matchedArea.name}
+              </span>
+            ) : null}
+          </span>
+          <strong>{formatTaka(deliveryFee)}</strong>
         </div>
         <div className="summary-line">
           <span>Total</span>
-          <strong>{formatTaka(subtotal + 60)}</strong>
+          <strong>{formatTaka(subtotal + deliveryFee)}</strong>
         </div>
         <p className="muted" style={{ fontSize: "0.8rem", marginTop: 8 }}>
-          Final delivery fee is set by the chosen Khulna area at order time.
+          Final delivery fee is set by your chosen Khulna area at order time.
         </p>
       </aside>
     </div>

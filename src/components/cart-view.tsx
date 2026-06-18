@@ -5,15 +5,17 @@ import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import { useCartItems } from "@/hooks/use-cart-items";
+import { useSavedDeliveryArea } from "@/hooks/use-saved-delivery-area";
 import { CART_STORAGE_KEY, getCartSubtotal } from "@/lib/cart";
+import { DEFAULT_DELIVERY_FEE } from "@/lib/delivery-area";
 import { formatTaka } from "@/lib/format";
 import type { CartItem } from "@/lib/types";
 
-const deliveryFee = 60;
-
 export function CartView() {
   const items = useCartItems();
+  const savedArea = useSavedDeliveryArea();
   const subtotal = useMemo(() => getCartSubtotal(items), [items]);
+  const deliveryFee = savedArea?.deliveryFee ?? DEFAULT_DELIVERY_FEE;
   const total = items.length > 0 ? subtotal + deliveryFee : 0;
 
   function writeCart(nextItems: CartItem[]) {
@@ -117,13 +119,25 @@ export function CartView() {
           <strong>{formatTaka(subtotal)}</strong>
         </div>
         <div className="summary-line">
-          <span>Delivery fee</span>
+          <span>
+            Delivery fee
+            {savedArea ? (
+              <span className="muted" style={{ marginLeft: 6, fontSize: "0.8rem" }}>
+                to {savedArea.name}
+              </span>
+            ) : null}
+          </span>
           <strong>{formatTaka(deliveryFee)}</strong>
         </div>
         <div className="summary-line">
           <span>Total</span>
           <strong>{formatTaka(total)}</strong>
         </div>
+        {!savedArea ? (
+          <p className="muted" style={{ fontSize: "0.85rem", marginTop: 8 }}>
+            Pick a delivery area in the navigation to see your real fee.
+          </p>
+        ) : null}
         <Link className="button" href="/checkout">
           Checkout
         </Link>

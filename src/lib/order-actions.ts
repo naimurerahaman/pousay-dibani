@@ -1,11 +1,13 @@
 "use server";
 
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import {
   checkoutFormSchema,
   orderLookupSchema,
 } from "@/lib/orders";
 import { generateUniqueOrderNumber } from "@/lib/order-number";
+import type { DeliveryAreaOption } from "@/lib/types";
 
 export type OrderActionResult =
   | { ok: true; orderNumber: string }
@@ -182,7 +184,7 @@ export async function lookupOrder(
   };
 }
 
-export async function getActiveDeliveryAreas() {
+export const getActiveDeliveryAreas = cache(async (): Promise<DeliveryAreaOption[]> => {
   const areas = await prisma.deliveryArea.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
@@ -192,4 +194,4 @@ export async function getActiveDeliveryAreas() {
     name: area.name,
     deliveryFee: area.deliveryFee,
   }));
-}
+});

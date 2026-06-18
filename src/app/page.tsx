@@ -9,24 +9,28 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import { HomeLocationGate } from "@/components/home-location-gate";
 import { ProductCard } from "@/components/product-card";
 import {
   getActiveCategories,
   getFeaturedProducts,
 } from "@/lib/catalog";
+import { getActiveDeliveryAreas } from "@/lib/order-actions";
 
 const categoryIcons = [PackageSearch, Home, ShieldCheck, Sparkles];
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [categories, featuredProducts] = await Promise.all([
+  const [categories, featuredProducts, deliveryAreas] = await Promise.all([
     getActiveCategories(),
     getFeaturedProducts(),
+    getActiveDeliveryAreas(),
   ]);
 
   return (
     <>
+      <HomeLocationGate areas={deliveryAreas} />
       <section className="section hero">
         <div>
           <span className="eyebrow">
