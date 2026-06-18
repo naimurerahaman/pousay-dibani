@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { Search } from "lucide-react";
-import { FormEvent, useState, useTransition } from "react";
+import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
 import { OrderSummary, type OrderSummaryView } from "@/components/order-summary";
+import { useRecentOrder } from "@/hooks/use-recent-order";
 import { formatPhone } from "@/lib/orders";
 import { lookupOrder } from "@/lib/order-actions";
 
@@ -30,11 +31,44 @@ export function OrderStatusForm({
   initialResult,
   initialError,
 }: OrderStatusFormProps) {
+  const recentOrder = useRecentOrder();
   const [isPending, startTransition] = useTransition();
   const [orderNumber, setOrderNumber] = useState(initialOrderNumber);
   const [phone, setPhone] = useState(initialPhone);
   const [result, setResult] = useState<OrderSummaryView | null>(initialResult);
   const [error, setError] = useState<string | null>(initialError);
+  const autoSubmittedRef = useRef(false);
+  const cancelledRef = useRef(false);
+
+  // Auto-track the most recent order from localStorage so users who just
+  // placed an order land on the summary without re-entering the phone.
+  useEffect(() => {
+    cancelledRef.current = false;
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (autoSubmittedRef.current || initialResult || !recentOrder) {
+      return;
+    }
+    const recentNumber = recentOrder.orderNumber;
+    const recentPhone = recentOrder.customerPhone;
+    if (!recentNumber || !recentPhone) {
+      return;
+    }
+    autoSubmittedRef.current = true;
+    startTransition(async () => {
+      const response = await lookupOrder({
+        orderNumber: recentNumber.trim(),
+        customerPhone: formatPhone(recentPhone),
+      });
+      if (!cancelledRef.current && response.ok) {
+        setResult(response.order);
+      }
+    });
+  }, [initialResult, recentOrder]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

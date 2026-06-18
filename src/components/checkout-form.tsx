@@ -6,6 +6,7 @@ import { MapPin } from "lucide-react";
 import { useCartItems } from "@/hooks/use-cart-items";
 import { useSavedDeliveryArea } from "@/hooks/use-saved-delivery-area";
 import { clearSavedDeliveryArea } from "@/lib/delivery-area-pref";
+import { writeRecentOrder } from "@/lib/recent-order";
 import { CART_STORAGE_KEY, getCartSubtotal } from "@/lib/cart";
 import { formatTaka } from "@/lib/format";
 import { formatPhone } from "@/lib/orders";
@@ -142,6 +143,11 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
         ),
         smsStatus: result.smsStatus,
         smsWarning: result.smsWarning,
+      });
+      writeRecentOrder({
+        orderNumber: result.orderNumber,
+        customerPhone,
+        savedAt: Date.now(),
       });
       clearCart();
     });
