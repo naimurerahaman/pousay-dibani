@@ -7,10 +7,19 @@ import {
   orderLookupSchema,
 } from "@/lib/orders";
 import { generateUniqueOrderNumber } from "@/lib/order-number";
+import { sendOrderConfirmation } from "@/lib/order-sms";
+import { report } from "@/lib/monitoring";
 import type { DeliveryAreaOption } from "@/lib/types";
 
+export type OrderSmsStatus = "sent" | "skipped" | "failed";
+
 export type OrderActionResult =
-  | { ok: true; orderNumber: string }
+  | {
+      ok: true;
+      orderNumber: string;
+      smsStatus: OrderSmsStatus;
+      smsWarning?: string;
+    }
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
 export type OrderLookupResult =
@@ -114,7 +123,7 @@ export async function placeOrder(
 
   const orderNumber = await generateUniqueOrderNumber();
 
-  await prisma.order.create({
+  const order = await prisma.order.create({
     data: {
       orderNumber,
       customerName: input.customerName,
@@ -129,9 +138,58 @@ export async function placeOrder(
         create: orderItems,
       },
     },
+    select: { id: true },
   });
 
-  return { ok: true, orderNumber };
+  // The order is committed; any SMS failure here must not undo it. The
+  // result is surfaced to the customer so they can record the order
+  // number themselves if the SMS never went out.
+  let smsStatus: OrderSmsStatus = "skipped";
+  let smsWarning: string | undefined;
+  try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const result = await sendOrderConfirmation({
+      orderId: order.id,
+      customerName: input.customerName,
+      customerPhone: input.customerPhone,
+      orderNumber,
+      total,
+      appUrl,
+    });
+
+    if (result.ok) {
+      smsStatus = "sent";
+    } else {
+      smsStatus = result.status;
+      smsWarning =
+        result.status === "skipped"
+          ? "SMS notifications are not configured. Please save your order number for status tracking."
+          : "We couldn't send your confirmation SMS. Please save your order number for status tracking.";
+      await report({
+        message: "Order confirmation SMS was not sent",
+        severity: "warning",
+        context: {
+          orderId: order.id,
+          orderNumber,
+          reason: result.reason,
+        },
+      });
+    }
+  } catch (error) {
+    smsStatus = "failed";
+    smsWarning =
+      "We couldn't send your confirmation SMS. Please save your order number for status tracking.";
+    await report({
+      message: "Unexpected error while sending order confirmation SMS",
+      severity: "error",
+      error,
+      context: { orderId: order.id, orderNumber },
+    });
+  }
+
+  return smsWarning
+    ? { ok: true, orderNumber, smsStatus, smsWarning }
+    : { ok: true, orderNumber, smsStatus };
 }
 
 export async function lookupOrder(

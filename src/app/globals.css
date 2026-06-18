@@ -1310,3 +1310,11 @@ img {
     flex-wrap: wrap;
   }
 }
+
+/* Form banner variants */
+
+.form-banner--warning {
+  border-color: #f1d6ad;
+  background: #fff7ec;
+  color: #6e3d00;
+}
