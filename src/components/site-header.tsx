@@ -1,8 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MapPin, PackageCheck } from "lucide-react";
 import { CartLink } from "@/components/cart-link";
 
 export function SiteHeader() {
+  const pathname = usePathname();
+
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <header className="site-header">
       <div className="site-header__inner">
