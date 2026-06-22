@@ -4,7 +4,7 @@ const cspHeader = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://images.unsplash.com https://images.openfoodfacts.org",
+  "img-src 'self' data: blob: https://images.unsplash.com https://images.openfoodfacts.org https://d2t8nl1y0ie1km.cloudfront.net",
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-ancestors 'none'",
@@ -33,6 +33,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.openfoodfacts.org",
+      },
+      {
+        protocol: "https",
+        hostname: "d2t8nl1y0ie1km.cloudfront.net",
       },
     ],
   },

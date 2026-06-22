@@ -16,6 +16,7 @@
     "prisma:seed": "dotenv -e .env -- prisma db seed",
     "prisma:studio": "dotenv -e .env -- prisma studio",
     "import:grocery": "dotenv -e .env -- node scripts/import-grocery.mjs",
+    "import:scrap": "dotenv -e .env -- node scripts/import-scrap.mjs",
     "smoke": "node scripts/smoke-test.mjs"
   },
   "devDependencies": {
