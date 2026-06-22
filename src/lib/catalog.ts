@@ -87,12 +87,22 @@ export async function getCategoryBySlug(
   return row ? toCategory(row) : null;
 }
 
-export async function getFeaturedProducts(): Promise<Product[]> {
-  const rows = await prisma.product.findMany({
+export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
+  const featured = await prisma.product.findMany({
     where: { isActive: true, isFeatured: true },
     orderBy: { createdAt: "desc" },
+    take: limit,
   });
-  return rows.map(toProduct);
+  if (featured.length > 0) return featured.map(toProduct);
+
+  // No products explicitly featured yet — show a sample of the live catalog so
+  // the home page never has an empty "popular" section.
+  const sample = await prisma.product.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+  return sample.map(toProduct);
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {

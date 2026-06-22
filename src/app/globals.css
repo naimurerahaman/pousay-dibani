@@ -611,10 +611,135 @@ img {
 }
 
 .site-footer {
-  margin-top: 36px;
+  margin-top: 56px;
   border-top: 1px solid var(--border);
-  padding: 28px 0;
+  background: var(--surface);
   color: var(--muted);
+}
+
+.site-footer__inner {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0 28px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.2fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.site-footer__brand .brand {
+  margin-bottom: 12px;
+}
+
+.site-footer__brand p {
+  margin: 0;
+  max-width: 320px;
+  line-height: 1.6;
+  font-size: 0.92rem;
+}
+
+.site-footer h4 {
+  margin: 0 0 14px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.site-footer__links {
+  display: grid;
+  gap: 10px;
+}
+
+.site-footer__links a {
+  color: var(--muted);
+  font-weight: 600;
+  width: fit-content;
+  transition: color 160ms ease;
+}
+
+.site-footer__links a:hover {
+  color: var(--primary-dark);
+}
+
+.site-footer__contact {
+  display: grid;
+  gap: 12px;
+}
+
+.site-footer__contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+a.site-footer__contact-item:hover {
+  color: var(--primary-dark);
+}
+
+.site-footer__contact-item svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.site-footer__bottom {
+  border-top: 1px solid var(--border);
+}
+
+.site-footer__bottom-inner {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 18px 0;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  .site-footer__inner {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+}
+
+/* Announcement bar above the navbar */
+
+.top-banner {
+  background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+  color: #fff;
+  text-align: center;
+}
+
+.top-banner__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.top-banner__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #7ee2a8;
+  animation: pulse-dot 1.8s ease-out infinite;
+}
+
+@keyframes pulse-dot {
+  0% {
+    box-shadow: 0 0 0 0 rgb(126 226 168 / 65%);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgb(126 226 168 / 0%);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(126 226 168 / 0%);
+  }
 }
 
 @media (max-width: 900px) {

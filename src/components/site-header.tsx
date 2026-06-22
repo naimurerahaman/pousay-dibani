@@ -19,8 +19,15 @@ export function SiteHeader({ deliveryAreas }: SiteHeaderProps) {
   }
 
   return (
-    <header className="site-header">
-      <div className="site-header__inner">
+    <>
+      <div className="top-banner" role="status">
+        <span className="top-banner__inner">
+          <span className="top-banner__dot" aria-hidden="true" />
+          We are available. Delivering till 11:59&nbsp;PM
+        </span>
+      </div>
+      <header className="site-header">
+        <div className="site-header__inner">
         <Link className="brand" href="/">
           <span className="brand__mark">
             <PackageCheck size={21} aria-hidden="true" />
@@ -43,7 +50,8 @@ export function SiteHeader({ deliveryAreas }: SiteHeaderProps) {
           </Link>
           <CartLink />
         </nav>
-      </div>
-    </header>
+        </div>
+      </header>
+    </>
   );
 }

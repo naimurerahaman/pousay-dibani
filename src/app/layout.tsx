@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { getActiveDeliveryAreas } from "@/lib/order-actions";
 import "./globals.css";
 
@@ -22,12 +23,7 @@ export default async function RootLayout({
         <div className="page-shell">
           <SiteHeader deliveryAreas={deliveryAreas} />
           <main>{children}</main>
-          <footer className="site-footer">
-            <div className="section">
-              Pousay Dibani delivers selected goods across supported Khulna city
-              areas with cash on delivery.
-            </div>
-          </footer>
+          <SiteFooter />
         </div>
       </body>
     </html>

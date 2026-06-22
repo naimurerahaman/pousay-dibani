@@ -98,8 +98,8 @@ export default async function HomePage() {
         </div>
 
         <div className="category-grid">
-          {categories.map((category, index) => {
-            const Icon = categoryIcons[index] ?? PackageSearch;
+          {categories.slice(0, 8).map((category, index) => {
+            const Icon = categoryIcons[index % categoryIcons.length] ?? PackageSearch;
 
             return (
               <Link
@@ -119,9 +119,12 @@ export default async function HomePage() {
       <section className="section">
         <div className="section-heading">
           <div>
-            <h2>Featured products</h2>
-            <p>Useful goods for the first Khulna delivery catalog.</p>
+            <h2>Popular right now</h2>
+            <p>Most-demanded items our Khulna customers order again and again.</p>
           </div>
+          <Link className="button-ghost" href="/products">
+            See all <ArrowRight size={16} aria-hidden="true" />
+          </Link>
         </div>
         <div className="product-grid">
           {featuredProducts.map((product) => (
