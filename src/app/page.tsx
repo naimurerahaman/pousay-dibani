@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -10,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { HomeLocationGate } from "@/components/home-location-gate";
+import { HeroSlider, type HeroSlide } from "@/components/hero-slider";
 import { ProductCard } from "@/components/product-card";
 import {
   getActiveCategories,
@@ -18,6 +18,43 @@ import {
 import { getActiveDeliveryAreas } from "@/lib/order-actions";
 
 const categoryIcons = [PackageSearch, Home, ShieldCheck, Sparkles];
+
+// Hero carousel slides — edit these to change the offers/sales/featured promos.
+// Graphics are 3D illustrations stored in /public/hero.
+const heroSlides: HeroSlide[] = [
+  {
+    image: "/hero/leafy-green.png",
+    badge: "Fresh today",
+    title: "Daily groceries, delivered fast",
+    subtitle: "Order now for same-day delivery across Khulna city.",
+    href: "/products",
+    gradient: "linear-gradient(135deg, #0f3d2e 0%, #176b4a 100%)",
+  },
+  {
+    image: "/hero/delivery-truck.png",
+    badge: "Open late",
+    title: "Delivering till 11:59 PM",
+    subtitle: "Late-night essentials, sorted — we're available now.",
+    href: "/products",
+    gradient: "linear-gradient(135deg, #1e2a52 0%, #3a4ea0 100%)",
+  },
+  {
+    image: "/hero/money-wings.png",
+    badge: "Cash on delivery",
+    title: "Pay when it arrives",
+    subtitle: "No online payment needed — simple and safe.",
+    href: "/products",
+    gradient: "linear-gradient(135deg, #5a3210 0%, #b9772a 100%)",
+  },
+  {
+    image: "/hero/shopping-bags.png",
+    badge: "Featured",
+    title: "Snacks & drinks favourites",
+    subtitle: "Stock up on the most-ordered treats.",
+    href: "/products?category=snacks-drinks",
+    gradient: "linear-gradient(135deg, #4a1340 0%, #9c2c7a 100%)",
+  },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -53,16 +90,9 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="hero-visual" aria-label="Fresh grocery delivery">
+        <div className="hero-visual" aria-label="Latest offers and featured items">
           <div className="hero-visual__image">
-            <Image
-              src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80"
-              alt="Fresh vegetables and groceries prepared for delivery"
-              fill
-              priority
-              sizes="(max-width: 900px) 100vw, 46vw"
-              style={{ objectFit: "cover" }}
-            />
+            <HeroSlider slides={heroSlides} />
           </div>
           <div className="hero-visual__footer">
             <span className="metric">
