@@ -22,8 +22,6 @@ type FieldErrors = Record<string, string>;
 
 type ConfirmedOrder = {
   summary: OrderSummaryView;
-  smsStatus: "sent" | "skipped" | "failed";
-  smsWarning?: string;
 };
 
 function buildOrderSummaryFromCart(
@@ -141,8 +139,6 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
           notes,
           items,
         ),
-        smsStatus: result.smsStatus,
-        smsWarning: result.smsWarning,
       });
       writeRecentOrder({
         orderNumber: result.orderNumber,
@@ -161,18 +157,10 @@ export function CheckoutForm({ areas }: CheckoutFormProps) {
             <h2>Order received</h2>
             <p>
               Your order number is{" "}
-              <strong>{confirmedOrder.summary.orderNumber}</strong>. Pousay
-              Dibani will confirm the delivery by phone.
+              <strong>{confirmedOrder.summary.orderNumber}</strong>. Please save
+              it to track your order — Pousay Dibani will confirm the delivery by
+              phone.
             </p>
-            {confirmedOrder.smsWarning ? (
-              <div
-                className="form-banner form-banner--warning"
-                role="status"
-                style={{ marginTop: 16, textAlign: "left" }}
-              >
-                {confirmedOrder.smsWarning}
-              </div>
-            ) : null}
             <div className="hero-actions">
               <Link className="button" href="/products">
                 Continue shopping

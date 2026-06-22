@@ -38,15 +38,20 @@ migrated and seeded. The storefront and admin both serve real data.
 
 ### Features shipped since the original MVP (post-Milestone-5)
 
-- **Order confirmation SMS** via a pluggable provider (`SmsProvider` interface).
-  Default `console` provider logs to stdout; every attempt is recorded in a new
-  `SmsLog` table. (commit `f94431a`)
 - **First-visit location picker** — modal captures the delivery area once,
   persists to localStorage, surfaces in navbar / cart / checkout. (commit `e311433`)
 - **Storefront navbar hidden on `/admin/*` routes.** (commit `b63be05`)
 - **Order-status page auto-tracks the most recent order** placed in this
   browser (no need to re-enter phone). (commit `63f0f74`)
 - **Professional project README.** (commit `d44ad26`)
+
+> **Removed:** An order-confirmation SMS feature was briefly added (commit
+> `f94431a`) but **removed** on 2026-06-22 — it added operational complexity
+> (a paid/approved gateway, WhatsApp Business setup) for little MVP value. The
+> MVP sends **no automated notifications**; the customer keeps their order
+> number and the admin confirms by phone. The `SmsLog` table, `SmsStatus` enum,
+> and `src/lib/sms.ts` / `src/lib/order-sms.ts` are gone; migration
+> `20260622090000_remove_sms_log` drops the table on `prisma migrate deploy`.
 
 ### Live verification (2026-06-22)
 
@@ -103,9 +108,9 @@ pousay-dibani/
 ├── supabase/
 │   └── config.toml              # Supabase project config (project_id = pousay-dibani)
 ├── prisma/
-│   ├── schema.prisma            # 7 models: Product, Category, Order, OrderItem, AdminUser, DeliveryArea, SmsLog
+│   ├── schema.prisma            # 6 models: Product, Category, Order, OrderItem, AdminUser, DeliveryArea
 │   ├── seed.ts                  # seeds 4 categories, 8 products, 5 areas, 1 admin
-│   └── migrations/              # two: 20260615..._init, 20260618..._add_sms_log
+│   └── migrations/              # _init, _add_sms_log, _remove_sms_log (SmsLog added then dropped)
 └── src/
     ├── auth.ts                  # Auth.js config
     ├── proxy.ts                 # protects /admin/* (replaces deprecated middleware.ts)
@@ -261,12 +266,16 @@ with a session error, re-check `AUTH_SECRET` in Vercel → Settings → Env Vars
 - Domains: `pousay-dibani.vercel.app` (canonical),
   `pousay-dibani-git-main-...vercel.app`, plus per-deploy URLs.
 
-#### 4. Apply migrations and seed on production — ✅ Done
-Both migrations (`_init`, `_add_sms_log`) are applied and the catalog is seeded
-(verified: `/products` renders real products on the live site). To re-run later
-against the production DB:
+#### 4. Apply migrations and seed on production — ✅ Done (⚠️ one new migration pending)
+The `_init` and `_add_sms_log` migrations are applied and the catalog is seeded
+(verified: `/products` renders real products on the live site).
+
+⚠️ **After deploying the SMS removal, run `npx prisma migrate deploy` against
+the production DB** so the new `_remove_sms_log` migration drops the now-unused
+`SmsLog` table and `SmsStatus` enum. (Skipping it is harmless — the table just
+sits unused — but running it keeps schema and DB in sync.)
 ```bash
-npx prisma migrate deploy      # apply any new migrations
+npx prisma migrate deploy      # apply any new migrations (incl. _remove_sms_log)
 npm run prisma:seed            # full seed (catalog + admin)
 npm run prisma:seed -- admin   # only the admin user
 ```
@@ -304,8 +313,8 @@ The deploy is live; these are the remaining manual items, none of them blockers:
       (or the custom domain) so auth redirects and tracking links are correct
 - [ ] **Check Vercel runtime logs** for any startup/runtime errors
 - [ ] **(Optional) Connect a custom domain** in Vercel → Settings → Domains
-- [ ] **(Optional) Wire a real SMS provider** — currently `console` only (logs
-      to Vercel stdout). Set `SMS_PROVIDER` + provider keys to send real SMS.
+- [ ] **Run `npx prisma migrate deploy`** on prod after the SMS-removal deploy
+      to drop the unused `SmsLog` table (see section 6.4)
 
 #### 8. Image storage (deferred)
 Currently product images are hotlinked from `images.unsplash.com`. To upload
@@ -335,11 +344,12 @@ broad rollout but are not blockers for the MVP.
 3. **No order cancellation reason / audit log.** Admins can flip an order to CANCELLED
    but there's no record of who/when beyond `updatedAt`. Consider an `OrderEvent` table
    for the future.
-4. **SMS notifications are stubbed, email is not wired.** Order confirmation SMS
-   now exists (`src/lib/sms.ts` + `order-sms.ts`, logged to `SmsLog`), but the
-   shipped provider is `console` (logs to stdout only) — no real SMS goes out
-   until a provider (`bulksms`/`twilio`) is implemented and `SMS_PROVIDER` is set.
-   No admin email notification on new orders; admin still checks the dashboard.
+4. **No automated notifications (by design).** There is no SMS, WhatsApp, or
+   email — for the customer or the admin. After checkout the customer sees their
+   order number on screen (and can look it up at `/order-status`); the admin
+   watches the dashboard and confirms by phone. An SMS feature was prototyped and
+   then removed (see §2) because it required a paid/approved gateway for little
+   MVP value. This is now recorded as out-of-scope in PRD §5.
 5. **In-memory rate limiter.** `src/lib/rate-limit.ts` is fine for a single-instance
    deploy. For multi-instance production, swap the in-memory Map for Upstash Redis or
    Vercel KV — the `consume()` API stays the same.
@@ -472,8 +482,7 @@ any constants, types, or labels to `src/lib/admin-constants.ts`.
 |----------------------|----------------|----------|----------------------------------------------------|
 | `DATABASE_URL`       | local + Vercel | yes      | PostgreSQL connection string. Prod = Supabase.     |
 | `POSTGRES_PRISMA_URL` / `POSTGRES_URL` | Vercel | fallback | Auto-injected by Supabase; `prisma.ts` falls back to these if `DATABASE_URL` is unset. |
-| `NEXT_PUBLIC_APP_URL`| local + Vercel | yes      | Used for absolute URLs (SMS tracking links, etc.). Must be https in production. |
-| `SMS_PROVIDER`       | optional       | no       | `console` (default, logs only), or future `bulksms` / `twilio`. See `.env.example`. |
+| `NEXT_PUBLIC_APP_URL`| local + Vercel | yes      | Used for absolute URLs (order links, etc.). Must be https in production. |
 | `ADMIN_EMAIL`        | local + Vercel | yes (seed) | Owner email for the seeded admin                  |
 | `ADMIN_PASSWORD`     | local + Vercel | yes (seed) | **Rotate in production.** Don't keep `admin@123`   |
 | `AUTH_SECRET`        | local + Vercel | yes      | `openssl rand -base64 32`. Required by Auth.js. Asserted at startup. |
@@ -491,7 +500,13 @@ any constants, types, or labels to `src/lib/admin-constants.ts`.
   - `/products` renders real seeded products → Supabase DB connected + seeded
   - Latest production deploy `READY` (auto-deployed from `main` @ `63f0f74`)
 - ⚠️ Still pending: manual admin login + order-status-change click-through on
-  prod (section 6.6), and rotating the admin password (section 6.7).
+  prod (section 6.6), rotating the admin password (section 6.7), and running
+  `npx prisma migrate deploy` to apply `_remove_sms_log` on prod (section 6.4).
+- **SMS feature removed (2026-06-22):** deleted `src/lib/sms.ts` +
+  `order-sms.ts`, stripped the send wiring from `placeOrder` and the checkout
+  UI, dropped the `SmsLog` model / `SmsStatus` enum (migration
+  `_remove_sms_log`). Re-verified after removal: `npm run typecheck` ✅,
+  `npm run lint` ✅, `npm run build` ✅.
 - Prior local verification (2026-06-16):
   - `npm run typecheck` ✅ / `npm run lint` ✅
   - `npm run build` ✅ — 21 routes, 3 static, 18 dynamic

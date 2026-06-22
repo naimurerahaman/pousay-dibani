@@ -61,6 +61,9 @@ Pousay Dibani is a Khulna-based home delivery platform for everyday goods and pr
 - User wallet, loyalty points, coupons, or subscriptions.
 - Multi-city support.
 - Advanced inventory forecasting.
+- Automated customer notifications (SMS, WhatsApp, or email). The customer's
+  confirmation is the order number shown on screen at checkout and lookup at
+  `/order-status`. The admin confirms each order by phone.
 
 ## 6. Core User Flows
 
@@ -226,5 +229,8 @@ Pousay Dibani is a Khulna-based home delivery platform for everyday goods and pr
 - Should delivery fee be fixed or area-based at launch?
 - Should customers need accounts, or should checkout remain guest-only for MVP?
 - Who will receive new order notifications, and through what channel?
+  (Decision: no automated notifications in the MVP — see §5. The admin watches
+  the dashboard and confirms orders by phone. Revisit a notification channel
+  post-MVP.)
 - What brand colors, logo, and language preference should the UI use?
 
