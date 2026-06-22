@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
+import { CategoryFilterSelect } from "@/components/category-filter-select";
 import { getActiveCategories, searchProducts } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
@@ -41,14 +42,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           </label>
           <label className="field">
             <span>Category</span>
-            <select name="category" defaultValue={selectedCategory}>
-              <option value="">All categories</option>
-              {categories.map((category) => (
-                <option value={category.id} key={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <CategoryFilterSelect
+              categories={categories}
+              defaultValue={selectedCategory}
+            />
           </label>
         </div>
         <button className="button" type="submit">
