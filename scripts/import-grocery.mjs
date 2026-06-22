@@ -101,6 +101,34 @@ const CURATED = [
   { name: "Loose Tea", unit: "400 g pack", price: 230, categoryId: "snacks-drinks", featured: false, image: "https://images.unsplash.com/photo-1523920290228-4f321a939b4c?auto=format&fit=crop&w=900&q=80", description: "Strong black tea leaves for everyday cha." },
 ];
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Open Food Facts rate-limits its search API and intermittently returns 503.
+// Retry a few times with exponential backoff before giving up on a page.
+async function fetchJsonWithRetry(url, attempts = 5) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+      });
+      if (res.ok) return await res.json();
+      if (res.status === 503 || res.status === 429) {
+        const wait = 1500 * 2 ** i;
+        console.warn(`  OFF HTTP ${res.status}; retrying in ${Math.round(wait / 1000)}s (attempt ${i + 1}/${attempts})...`);
+        await sleep(wait);
+        continue;
+      }
+      console.warn(`  OFF HTTP ${res.status}; giving up on this page.`);
+      return null;
+    } catch (err) {
+      const wait = 1500 * 2 ** i;
+      console.warn(`  OFF fetch error (${err.message}); retrying in ${Math.round(wait / 1000)}s...`);
+      await sleep(wait);
+    }
+  }
+  return null;
+}
+
 async function fetchOffProducts() {
   const collected = [];
   const seenSlugs = new Set();
@@ -114,16 +142,11 @@ async function fetchOffProducts() {
       "&page_size=100&sort_by=unique_scans_n&page=" +
       page;
 
-    let json;
-    try {
-      const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
-      if (!res.ok) {
-        console.warn(`  OFF page ${page} returned HTTP ${res.status}; stopping fetch.`);
-        break;
-      }
-      json = await res.json();
-    } catch (err) {
-      console.warn(`  OFF page ${page} fetch failed: ${err.message}; stopping fetch.`);
+    if (page > 1) await sleep(1500); // be polite between pages
+
+    const json = await fetchJsonWithRetry(url);
+    if (!json) {
+      console.warn(`  OFF page ${page} unavailable after retries; continuing with what we have.`);
       break;
     }
 
