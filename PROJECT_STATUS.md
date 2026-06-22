@@ -53,6 +53,18 @@ migrated and seeded. The storefront and admin both serve real data.
 > and `src/lib/sms.ts` / `src/lib/order-sms.ts` are gone; migration
 > `20260622090000_remove_sms_log` drops the table on `prisma migrate deploy`.
 
+- **Bangladeshi grocery catalog importer** (`scripts/import-grocery.mjs`,
+  `npm run import:grocery`) — pulls real BD products **with photos** from
+  [Open Food Facts](https://openfoodfacts.org) (free, ODbL, no key; filtered to
+  `countries_tags_en=Bangladesh`), keeps only clean items, maps them into
+  categories (Fresh, Snacks & Drinks, Dairy, Household), and upserts by slug.
+  Adds a curated staples backbone (rice, oil, daal, atta, sugar, salt, onion,
+  potato, etc.). **Prices are placeholders — review in `/admin/products`.**
+  `node scripts/import-grocery.mjs --dry-run` previews without touching the DB.
+  `images.openfoodfacts.org` was added to `next.config.ts` `remotePatterns` +
+  CSP `img-src` so the photos render. (Run the importer against the prod DB the
+  same way you run the seed — it needs `DATABASE_URL`.)
+
 ### Live verification (2026-06-22)
 
 Checked against `https://pousay-dibani.vercel.app`:
