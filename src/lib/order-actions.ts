@@ -185,13 +185,23 @@ export async function lookupOrder(
 }
 
 export const getActiveDeliveryAreas = cache(async (): Promise<DeliveryAreaOption[]> => {
-  const areas = await prisma.deliveryArea.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-  });
-  return areas.map((area) => ({
-    slug: area.slug,
-    name: area.name,
-    deliveryFee: area.deliveryFee,
-  }));
+  // This runs in the root layout on every page, including the statically
+  // pre-rendered /_not-found at build time. If the database is unavailable
+  // (e.g. a build with no DATABASE_URL), degrade to an empty list instead of
+  // crashing the whole build/render. At runtime in production the DB is present
+  // and this returns the real areas.
+  try {
+    const areas = await prisma.deliveryArea.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    });
+    return areas.map((area) => ({
+      slug: area.slug,
+      name: area.name,
+      deliveryFee: area.deliveryFee,
+    }));
+  } catch (error) {
+    console.error("getActiveDeliveryAreas failed; returning empty list.", error);
+    return [];
+  }
 });
