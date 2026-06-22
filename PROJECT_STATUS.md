@@ -20,7 +20,13 @@ Cash on delivery only for MVP. No online payments, no rider app, no GPS, no mult
 
 ---
 
-## 2. Current status: 5 of 5 milestones complete
+## 2. Current status: 5 of 5 milestones complete — DEPLOYED & LIVE
+
+**🚀 Live in production: https://pousay-dibani.vercel.app**
+
+The app is no longer just "production-ready in code" — it is **deployed and
+running on Vercel**, backed by a **Supabase** PostgreSQL database that is
+migrated and seeded. The storefront and admin both serve real data.
 
 | # | Milestone                          | Status     | Notes                                                   |
 |---|------------------------------------|------------|---------------------------------------------------------|
@@ -28,7 +34,31 @@ Cash on delivery only for MVP. No online payments, no rider app, no GPS, no mult
 | 2 | Catalog and Cart                   | ✅ Done     | Reads from Prisma, seeded, search + category filter     |
 | 3 | Checkout and Orders                | ✅ Done     | Real Order/OrderItem writes, status lookup, validation  |
 | 4 | Admin Dashboard                    | ✅ Done     | Auth.js v5, dashboard, full CRUD, order status workflow |
-| 5 | Production Deployment              | ✅ Done     | Vercel config, env hardening, security headers, rate limiting, monitoring hook, smoke test, deployment guide |
+| 5 | Production Deployment              | ✅ **Deployed** | Live on Vercel (`pousay-dibani.vercel.app`), Supabase Postgres, GitHub auto-deploy from `main`, env vars set, DB migrated + seeded |
+
+### Features shipped since the original MVP (post-Milestone-5)
+
+- **Order confirmation SMS** via a pluggable provider (`SmsProvider` interface).
+  Default `console` provider logs to stdout; every attempt is recorded in a new
+  `SmsLog` table. (commit `f94431a`)
+- **First-visit location picker** — modal captures the delivery area once,
+  persists to localStorage, surfaces in navbar / cart / checkout. (commit `e311433`)
+- **Storefront navbar hidden on `/admin/*` routes.** (commit `b63be05`)
+- **Order-status page auto-tracks the most recent order** placed in this
+  browser (no need to re-enter phone). (commit `63f0f74`)
+- **Professional project README.** (commit `d44ad26`)
+
+### Live verification (2026-06-22)
+
+Checked against `https://pousay-dibani.vercel.app`:
+- `/` → 200 ✅
+- `/products` → 200 ✅ and **renders real seeded products** (DB connected)
+- `/admin/login` → 200 ✅
+- `/order-status` → 200 ✅
+
+Still requires a manual human pass (can't be automated): logging into `/admin`
+with the real credentials and walking an order through a status change. See
+section 6.6.
 
 Verification passes locally:
 - `npm run typecheck` ✅
@@ -70,10 +100,12 @@ pousay-dibani/
 ├── eslint.config.mjs
 ├── prisma.config.ts             # schema + seed via tsx
 ├── .env / .env.example          # DATABASE_URL, ADMIN_*, AUTH_SECRET, etc.
+├── supabase/
+│   └── config.toml              # Supabase project config (project_id = pousay-dibani)
 ├── prisma/
-│   ├── schema.prisma            # 6 models: Product, Category, Order, OrderItem, AdminUser, DeliveryArea
+│   ├── schema.prisma            # 7 models: Product, Category, Order, OrderItem, AdminUser, DeliveryArea, SmsLog
 │   ├── seed.ts                  # seeds 4 categories, 8 products, 5 areas, 1 admin
-│   └── migrations/              # one init migration
+│   └── migrations/              # two: 20260615..._init, 20260618..._add_sms_log
 └── src/
     ├── auth.ts                  # Auth.js config
     ├── proxy.ts                 # protects /admin/* (replaces deprecated middleware.ts)
@@ -204,49 +236,39 @@ setup and a one-time deploy**, both of which the project can't do on its own.
     during `npm install`)
   - `smoke` — `node scripts/smoke-test.mjs`
 
-### 6.2 What you still need to do (deployment checklist)
+### 6.2 Deployment checklist — DONE (with current state)
 
-#### 1. Provision a production PostgreSQL database
-Recommended providers (all have generous free tiers):
-- **Vercel Postgres** — easiest if you're on Vercel. Click "Storage → Create
-  Database → Postgres" in your Vercel project. Vercel auto-sets `DATABASE_URL`.
-- **Neon** (https://neon.tech) — serverless Postgres with branching. Free tier
-  is plenty for MVP. Copy the pooled connection string.
-- **Supabase** (https://supabase.com) — Postgres with extras (auth, storage).
-  If you want image storage, Supabase is a natural choice.
+> **This whole checklist is now complete.** It's kept here as a record of how
+> the live deployment was set up and as a runbook for re-deploying or moving to
+> a new database/host. Items that still need a human are flagged ⚠️.
 
-#### 2. Generate a real `AUTH_SECRET`
-On your local machine:
+#### 1. Provision a production PostgreSQL database — ✅ Supabase
+The production DB is **Supabase Postgres** (project_id `pousay-dibani`, see
+`supabase/config.toml`). `src/lib/prisma.ts` resolves the connection string from
+`DATABASE_URL` → `POSTGRES_PRISMA_URL` → `POSTGRES_URL`, so Supabase's
+auto-injected `POSTGRES_*` vars work without extra config.
+
+#### 2. Generate a real `AUTH_SECRET` — ✅ Set on Vercel
+A real secret is configured in the Vercel project env (the production build is
+live and `assertProductionEnv()` rejects placeholder secrets at sign-in time).
+⚠️ The actual value can't be read back via the API — if admin login ever fails
+with a session error, re-check `AUTH_SECRET` in Vercel → Settings → Env Vars.
+
+#### 3. Deploy to Vercel — ✅ Done (GitHub auto-deploy)
+- Repo: `github.com/naimurerahaman/pousay-dibani` (public).
+- Vercel project: `pousay-dibani` under team "Emon's projects".
+- Every push to `main` auto-deploys to **production** (Node 24.x, Turbopack).
+- Domains: `pousay-dibani.vercel.app` (canonical),
+  `pousay-dibani-git-main-...vercel.app`, plus per-deploy URLs.
+
+#### 4. Apply migrations and seed on production — ✅ Done
+Both migrations (`_init`, `_add_sms_log`) are applied and the catalog is seeded
+(verified: `/products` renders real products on the live site). To re-run later
+against the production DB:
 ```bash
-openssl rand -base64 32
-```
-Use that value for both local `.env` and the Vercel env var.
-
-#### 3. Deploy to Vercel
-1. Push the repo to GitHub/GitLab/Bitbucket.
-2. In Vercel: **Add New Project → Import** the repo.
-3. Vercel will auto-detect Next.js. Override nothing; defaults are correct.
-4. **Environment Variables**: set the following in the Vercel project settings
-   before the first deploy:
-   - `DATABASE_URL` — paste your production database URL
-   - `NEXT_PUBLIC_APP_URL` — `https://<your-project>.vercel.app` (or your custom domain)
-   - `AUTH_SECRET` — the value from step 2
-   - `AUTH_TRUST_HOST` — `true`
-   - `ADMIN_EMAIL` — your real admin email
-   - `ADMIN_PASSWORD` — a **strong** password (min 12 chars, mixed case + symbols)
-5. Click **Deploy**. The first build will run `npm install` → `prisma generate`
-   (via `postinstall`) → `next build`.
-
-#### 4. Apply migrations and seed on production
-Once the first deploy is live, run this locally (or in Vercel's shell) with
-your production `DATABASE_URL`:
-```bash
-# Apply the schema
-npx prisma migrate deploy
-
-# Seed catalog + admin (or just the admin if you don't want demo data)
-npm run prisma:seed           # full seed
-npm run prisma:seed -- admin  # only the admin user
+npx prisma migrate deploy      # apply any new migrations
+npm run prisma:seed            # full seed (catalog + admin)
+npm run prisma:seed -- admin   # only the admin user
 ```
 > Note: `npm run prisma:seed -- admin` passes `admin` to the seed script as
 > the first CLI argument.
@@ -271,15 +293,19 @@ You should see `All 7 smoke checks passed.`
 - [ ] Click into it, change the status to "Confirmed", confirm it persists
 - [ ] Sign out
 
-#### 7. First-30-minutes must-dos
-- [ ] **Change the admin password** in the DB (no UI for this yet — easiest is
-      `npm run prisma:seed -- admin` after setting a new `ADMIN_PASSWORD`)
-- [ ] **Verify `NEXT_PUBLIC_APP_URL`** is the real production URL (else auth
-      redirects will break)
-- [ ] **Check Vercel logs** for any startup errors
-- [ ] **Lock down the Vercel project** — disable "Auto-Deploy" on PR branches if
-      you don't want preview URLs
+#### 7. Outstanding operator to-dos (post-launch)
+The deploy is live; these are the remaining manual items, none of them blockers:
+- [ ] ⚠️ **Run the manual order → admin flow** on production (section 6.6). This
+      is the one verification still pending — confirms admin login + status
+      updates work end-to-end against the live DB.
+- [ ] ⚠️ **Change the admin password** off any default (no UI yet — set a new
+      `ADMIN_PASSWORD` in Vercel + local, then `npm run prisma:seed -- admin`)
+- [ ] **Confirm `NEXT_PUBLIC_APP_URL`** = `https://pousay-dibani.vercel.app`
+      (or the custom domain) so auth redirects and tracking links are correct
+- [ ] **Check Vercel runtime logs** for any startup/runtime errors
 - [ ] **(Optional) Connect a custom domain** in Vercel → Settings → Domains
+- [ ] **(Optional) Wire a real SMS provider** — currently `console` only (logs
+      to Vercel stdout). Set `SMS_PROVIDER` + provider keys to send real SMS.
 
 #### 8. Image storage (deferred)
 Currently product images are hotlinked from `images.unsplash.com`. To upload
@@ -309,9 +335,11 @@ broad rollout but are not blockers for the MVP.
 3. **No order cancellation reason / audit log.** Admins can flip an order to CANCELLED
    but there's no record of who/when beyond `updatedAt`. Consider an `OrderEvent` table
    for the future.
-4. **No email or SMS notifications.** The PRD open questions mention notifications —
-   none are wired up. When a customer places an order, the only feedback is the
-   confirmation page. The admin has to check the dashboard.
+4. **SMS notifications are stubbed, email is not wired.** Order confirmation SMS
+   now exists (`src/lib/sms.ts` + `order-sms.ts`, logged to `SmsLog`), but the
+   shipped provider is `console` (logs to stdout only) — no real SMS goes out
+   until a provider (`bulksms`/`twilio`) is implemented and `SMS_PROVIDER` is set.
+   No admin email notification on new orders; admin still checks the dashboard.
 5. **In-memory rate limiter.** `src/lib/rate-limit.ts` is fine for a single-instance
    deploy. For multi-instance production, swap the in-memory Map for Upstash Redis or
    Vercel KV — the `consume()` API stays the same.
@@ -442,8 +470,10 @@ any constants, types, or labels to `src/lib/admin-constants.ts`.
 
 | Var                  | Where          | Required | Notes                                              |
 |----------------------|----------------|----------|----------------------------------------------------|
-| `DATABASE_URL`       | local + Vercel | yes      | PostgreSQL connection string                       |
-| `NEXT_PUBLIC_APP_URL`| local + Vercel | yes      | Used for absolute URLs (emails, etc. when added). Must be https in production. |
+| `DATABASE_URL`       | local + Vercel | yes      | PostgreSQL connection string. Prod = Supabase.     |
+| `POSTGRES_PRISMA_URL` / `POSTGRES_URL` | Vercel | fallback | Auto-injected by Supabase; `prisma.ts` falls back to these if `DATABASE_URL` is unset. |
+| `NEXT_PUBLIC_APP_URL`| local + Vercel | yes      | Used for absolute URLs (SMS tracking links, etc.). Must be https in production. |
+| `SMS_PROVIDER`       | optional       | no       | `console` (default, logs only), or future `bulksms` / `twilio`. See `.env.example`. |
 | `ADMIN_EMAIL`        | local + Vercel | yes (seed) | Owner email for the seeded admin                  |
 | `ADMIN_PASSWORD`     | local + Vercel | yes (seed) | **Rotate in production.** Don't keep `admin@123`   |
 | `AUTH_SECRET`        | local + Vercel | yes      | `openssl rand -base64 32`. Required by Auth.js. Asserted at startup. |
@@ -455,12 +485,18 @@ any constants, types, or labels to `src/lib/admin-constants.ts`.
 
 ## 12. Last verified
 
-- Date: 2026-06-16
-- `npm run typecheck` ✅
-- `npm run lint` ✅
-- `npm run build` ✅ — 21 routes, 3 static, 18 dynamic
-- `npm run prisma:seed` ✅
-- Admin login: `admin@pousaydibani.com` / `admin@123` (dev only)
+- Date: 2026-06-22
+- **Production is LIVE:** https://pousay-dibani.vercel.app
+  - `/`, `/products`, `/admin/login`, `/order-status` → all 200
+  - `/products` renders real seeded products → Supabase DB connected + seeded
+  - Latest production deploy `READY` (auto-deployed from `main` @ `63f0f74`)
+- ⚠️ Still pending: manual admin login + order-status-change click-through on
+  prod (section 6.6), and rotating the admin password (section 6.7).
+- Prior local verification (2026-06-16):
+  - `npm run typecheck` ✅ / `npm run lint` ✅
+  - `npm run build` ✅ — 21 routes, 3 static, 18 dynamic
+  - `npm run prisma:seed` ✅
+- Admin login (local/dev default): `admin@pousaydibani.com` / `admin@123`
 
 ### Milestone 5 hardening — final pass
 
