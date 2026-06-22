@@ -41,9 +41,9 @@ export function SiteFooter() {
         <div>
           <h4>Contact</h4>
           <div className="site-footer__contact">
-            <a className="site-footer__contact-item" href="tel:+8801XXXXXXXXX">
+            <a className="site-footer__contact-item" href="tel:+8801334186886">
               <Phone size={16} aria-hidden="true" />
-              +880 1XXX-XXXXXX
+              +880 1334-186886
             </a>
             <a
               className="site-footer__contact-item"

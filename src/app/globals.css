@@ -1,15 +1,24 @@
 :root {
-  --background: #f8faf6;
-  --surface: #ffffff;
-  --surface-soft: #eef5e8;
-  --ink: #17211a;
-  --muted: #657064;
-  --border: #dfe8d9;
-  --primary: #206a4a;
-  --primary-dark: #144932;
-  --accent: #d89132;
-  --danger: #b42318;
-  --shadow: 0 18px 50px rgb(36 49 30 / 10%);
+  --background: #0a0d0b;
+  --surface: #141815;
+  --surface-soft: #1a221d;
+  --surface-2: #1d2520;
+  --tile: #f3f6f1;
+  --ink: #eef2ec;
+  --muted: #9ba89c;
+  --border: #29312b;
+  --primary: #34cf7e;
+  --primary-dark: #4ad98e;
+  --accent: #e3a13c;
+  --danger: #f0584d;
+  --on-primary: #06140c;
+  --on-accent: #1c1304;
+  --shadow: 0 1px 2px rgb(0 0 0 / 50%), 0 28px 56px -28px rgb(0 0 0 / 80%);
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 40%), 0 16px 34px -24px rgb(0 0 0 / 70%);
+  --radius: 14px;
+  --radius-sm: 11px;
+  --font-display: "Bricolage Grotesque", Georgia, serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
 * {
@@ -23,12 +32,24 @@ html {
 
 body {
   margin: 0;
-  background: var(--background);
+  background:
+    radial-gradient(1100px 540px at 50% -260px, rgb(52 207 126 / 12%) 0%, transparent 70%),
+    var(--background);
+  background-attachment: fixed;
   color: var(--ink);
-  font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+.brand,
+.section-heading h2,
+.page-title {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 a {
@@ -124,13 +145,14 @@ img {
   justify-content: center;
   gap: 8px;
   border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  padding: 0 16px;
   font-weight: 700;
   transition:
     background 160ms ease,
     border-color 160ms ease,
     color 160ms ease,
+    box-shadow 160ms ease,
     transform 160ms ease;
 }
 
@@ -216,11 +238,13 @@ img {
   border-color: var(--primary);
   background: var(--primary);
   color: white;
+  box-shadow: 0 10px 22px -12px rgb(32 106 74 / 70%);
 }
 
 .button:hover {
   background: var(--primary-dark);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px -12px rgb(20 73 50 / 75%);
 }
 
 .button-secondary {
@@ -242,9 +266,31 @@ img {
 .hero-visual {
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero > div {
+    animation: rise-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .hero > div:nth-child(2) {
+    animation-delay: 130ms;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .hero-visual__image {
@@ -311,14 +357,37 @@ img {
 .checkout-panel,
 .empty-state {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: 0 8px 28px rgb(36 49 30 / 6%);
+  box-shadow: var(--shadow-soft);
 }
 
 .category-tile {
   min-height: 154px;
   padding: 18px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.category-tile:hover {
+  transform: translateY(-3px);
+  border-color: #c4dcb8;
+  box-shadow: var(--shadow);
+}
+
+.product-card {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  border-color: #c4dcb8;
+  box-shadow: var(--shadow);
 }
 
 .category-tile h3 {
@@ -595,10 +664,19 @@ img {
 .field textarea {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: white;
   color: var(--ink);
   padding: 12px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgb(32 106 74 / 14%);
 }
 
 .field textarea {
@@ -1442,4 +1520,146 @@ a.site-footer__contact-item:hover {
   border-color: #f1d6ad;
   background: #fff7ec;
   color: #6e3d00;
+}
+
+/* ============================================================
+   Dark theme tuning — overrides for hardcoded light values
+   ============================================================ */
+
+.site-header {
+  background: rgb(10 13 11 / 82%);
+}
+
+.top-banner {
+  background: var(--surface);
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+}
+
+.button {
+  color: var(--on-primary);
+}
+
+.brand__mark {
+  color: var(--on-primary);
+}
+
+.cart-badge {
+  color: var(--on-accent);
+}
+
+.eyebrow {
+  border-color: rgb(52 207 126 / 28%);
+  background: rgb(52 207 126 / 10%);
+  color: var(--primary-dark);
+}
+
+.button-secondary:hover {
+  border-color: rgb(52 207 126 / 42%);
+  background: var(--surface-soft);
+}
+
+/* Product photos sit on a light tile so packshots read cleanly on dark */
+.product-card__image,
+.cart-row__image,
+.product-detail__image {
+  background: var(--tile);
+}
+
+.product-card__category {
+  background: rgb(52 207 126 / 14%);
+  color: var(--primary-dark);
+}
+
+.category-tile:hover,
+.product-card:hover {
+  border-color: rgb(52 207 126 / 38%);
+}
+
+.stock-pill {
+  background: rgb(227 161 60 / 16%);
+  color: #ecbf7d;
+}
+
+.stock-pill[data-status="in_stock"] {
+  background: rgb(52 207 126 / 16%);
+  color: var(--primary-dark);
+}
+
+.stock-pill[data-status="out_of_stock"] {
+  background: rgb(240 88 77 / 16%);
+  color: #f3a39b;
+}
+
+.field input,
+.field select,
+.field textarea {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.quantity-control button {
+  background: var(--surface-2);
+  color: var(--primary-dark);
+}
+
+.locked-area {
+  background: var(--surface-soft);
+}
+
+.status-pill {
+  background: rgb(227 161 60 / 16%);
+  color: #ecbf7d;
+}
+
+.status-pill--info {
+  background: rgb(120 160 240 / 16%);
+  color: #9cc0f5;
+}
+
+.status-pill--success {
+  background: rgb(52 207 126 / 16%);
+  color: var(--primary-dark);
+}
+
+.status-pill--danger {
+  background: rgb(240 88 77 / 16%);
+  color: #f3a39b;
+}
+
+.form-banner {
+  background: rgb(240 88 77 / 12%);
+  color: #f3a39b;
+  border-color: rgb(240 88 77 / 35%);
+}
+
+.form-banner--warning {
+  background: rgb(227 161 60 / 12%);
+  color: #ecbf7d;
+  border-color: rgb(227 161 60 / 35%);
+}
+
+.location-picker__option--selected {
+  background: rgb(52 207 126 / 12%);
+}
+
+.nav-area-button--empty {
+  background: rgb(227 161 60 / 12%);
+  border-color: rgb(227 161 60 / 35%);
+  color: #ecbf7d;
+}
+
+.admin-shell {
+  background: #0e120f;
+}
+
+.admin-login-page {
+  background: linear-gradient(160deg, #0d110e 0%, #10160f 100%);
+}
+
+.admin-nav__link.is-active,
+.admin-nav__link.is-active:hover,
+.button-link--primary,
+.button-link--primary:hover {
+  color: var(--on-primary);
 }
