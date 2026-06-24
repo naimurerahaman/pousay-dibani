@@ -11,6 +11,7 @@ import {
 import { HomeLocationGate } from "@/components/home-location-gate";
 import { HeroSlider, type HeroSlide } from "@/components/hero-slider";
 import { ProductCard } from "@/components/product-card";
+import { ProductsSlider } from "@/components/products-slider";
 import {
   getActiveCategories,
   getFeaturedProducts,
@@ -156,11 +157,11 @@ export default async function HomePage() {
             See all <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
-        <div className="product-grid">
+        <ProductsSlider>
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
-        </div>
+        </ProductsSlider>
       </section>
     </>
   );
