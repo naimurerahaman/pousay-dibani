@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -11,11 +12,12 @@ import {
 import { HomeLocationGate } from "@/components/home-location-gate";
 import { HeroSlider, type HeroSlide } from "@/components/hero-slider";
 import { ProductCard } from "@/components/product-card";
-import { ProductsSlider } from "@/components/products-slider";
+import { CardSlider } from "@/components/card-slider";
 import {
   getActiveCategories,
   getFeaturedProducts,
 } from "@/lib/catalog";
+import { getCategoryImage } from "@/lib/category-images";
 import { getActiveDeliveryAreas } from "@/lib/order-actions";
 
 const categoryIcons = [PackageSearch, Home, ShieldCheck, Sparkles];
@@ -65,6 +67,39 @@ export default async function HomePage() {
     getFeaturedProducts(),
     getActiveDeliveryAreas(),
   ]);
+
+  const renderCategoryTile = (
+    category: (typeof categories)[number],
+    index: number,
+  ) => {
+    const Icon = categoryIcons[index % categoryIcons.length] ?? PackageSearch;
+    const image = getCategoryImage(category.name);
+
+    return (
+      <Link
+        className="category-tile"
+        href={`/products?category=${category.id}`}
+        key={category.id}
+      >
+        <span className="category-tile__media">
+          {image ? (
+            <Image
+              className="category-tile__img"
+              src={image}
+              alt={category.name}
+              width={72}
+              height={72}
+              unoptimized
+            />
+          ) : (
+            <Icon size={28} color="#34cf7e" aria-hidden="true" />
+          )}
+        </span>
+        <h3>{category.name}</h3>
+        <p>{category.description}</p>
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -128,22 +163,16 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="category-grid">
-          {categories.slice(0, 8).map((category, index) => {
-            const Icon = categoryIcons[index % categoryIcons.length] ?? PackageSearch;
+        {/* Desktop: all categories in one grid */}
+        <div className="category-grid category-grid--desktop">
+          {categories.map(renderCategoryTile)}
+        </div>
 
-            return (
-              <Link
-                className="category-tile"
-                href={`/products?category=${category.id}`}
-                key={category.id}
-              >
-                <Icon size={24} color="#206a4a" aria-hidden="true" />
-                <h3>{category.name}</h3>
-                <p>{category.description}</p>
-              </Link>
-            );
-          })}
+        {/* Mobile: compact, swipeable carousel */}
+        <div className="category-slider-mobile">
+          <CardSlider label="categories" slidesPerView={4} spaceBetween={10}>
+            {categories.map(renderCategoryTile)}
+          </CardSlider>
         </div>
       </section>
 
@@ -157,11 +186,19 @@ export default async function HomePage() {
             See all <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
-        <ProductsSlider>
+        <CardSlider
+          label="products"
+          slidesPerView={1.15}
+          breakpoints={{
+            560: { slidesPerView: 2, spaceBetween: 18 },
+            900: { slidesPerView: 3, spaceBetween: 20 },
+            1200: { slidesPerView: 4, spaceBetween: 22 },
+          }}
+        >
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
-        </ProductsSlider>
+        </CardSlider>
       </section>
     </>
   );
