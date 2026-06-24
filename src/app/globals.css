@@ -113,6 +113,18 @@ img {
   color: white;
 }
 
+.brand-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand__logo {
+  height: 56px;
+  width: auto;
+  display: block;
+}
+
 .brand__copy {
   display: grid;
   gap: 2px;
@@ -824,7 +836,8 @@ img {
   align-items: start;
 }
 
-.site-footer__brand .brand {
+.site-footer__brand .brand__logo {
+  height: 72px;
   margin-bottom: 12px;
 }
 

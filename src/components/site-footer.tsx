@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PackageCheck, Phone, Mail, Clock3, MapPin } from "lucide-react";
+import { Phone, Mail, Clock3, MapPin } from "lucide-react";
 
 export function SiteFooter() {
   const pathname = usePathname();
@@ -16,12 +17,13 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="site-footer__inner">
         <div className="site-footer__brand">
-          <span className="brand">
-            <span className="brand__mark">
-              <PackageCheck size={20} aria-hidden="true" />
-            </span>
-            <span className="brand__name">Pousay Dibani</span>
-          </span>
+          <Image
+            className="brand__logo"
+            src="/logo.png"
+            alt="Pousay Dibani"
+            width={500}
+            height={500}
+          />
           <p>
             Everyday groceries and home essentials delivered across Khulna city,
             with cash on delivery.

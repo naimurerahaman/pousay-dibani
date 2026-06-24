@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PackageCheck } from "lucide-react";
 import { CartLink } from "@/components/cart-link";
 import { NavAreaButton } from "@/components/nav-area-button";
 import type { LocationPickerOption } from "@/components/location-picker";
@@ -28,15 +28,19 @@ export function SiteHeader({ deliveryAreas }: SiteHeaderProps) {
       </div>
       <header className="site-header">
         <div className="site-header__inner">
-        <Link className="brand" href="/">
-          <span className="brand__mark">
-            <PackageCheck size={21} aria-hidden="true" />
-          </span>
-          <span className="brand__copy">
-            <span className="brand__name">Pousay Dibani</span>
-            <NavAreaButton areas={deliveryAreas} />
-          </span>
-        </Link>
+        <div className="brand-group">
+          <Link className="brand" href="/" aria-label="Pousay Dibani — home">
+            <Image
+              className="brand__logo"
+              src="/logo.png"
+              alt="Pousay Dibani"
+              width={500}
+              height={500}
+              priority
+            />
+          </Link>
+          <NavAreaButton areas={deliveryAreas} />
+        </div>
 
         <nav className="nav-links" aria-label="Primary navigation">
           <Link className="nav-link" href="/products">
