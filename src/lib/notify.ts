@@ -85,15 +85,17 @@ async function sendEmail(order: NewOrderNotification) {
 async function sendTelegram(order: NewOrderNotification) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
 
+  // Plain text (no parse_mode): product names can contain Markdown-special
+  // characters (_ * [ etc.) which would make Telegram reject the message.
   const text = [
-    `📦 *New order ${order.orderNumber}*`,
+    `📦 New order ${order.orderNumber}`,
     `👤 ${order.customerName} — ${order.customerPhone}`,
     `📍 ${order.deliveryArea}`,
     `🏠 ${order.deliveryAddress}`,
     "",
     itemLines(order),
     "",
-    `🧾 Total: *${formatTaka(order.total)}* (delivery ${formatTaka(order.deliveryFee)})`,
+    `🧾 Total: ${formatTaka(order.total)} (delivery ${formatTaka(order.deliveryFee)})`,
   ].join("\n");
 
   const res = await fetch(
@@ -104,7 +106,6 @@ async function sendTelegram(order: NewOrderNotification) {
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
         text,
-        parse_mode: "Markdown",
       }),
     },
   );
