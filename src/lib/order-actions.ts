@@ -1,13 +1,26 @@
 "use server";
 
 import { cache } from "react";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import {
   checkoutFormSchema,
   orderLookupSchema,
 } from "@/lib/orders";
 import { generateUniqueOrderNumber } from "@/lib/order-number";
+import { notifyNewOrder } from "@/lib/notify";
+import { consume, getClientKey } from "@/lib/rate-limit";
 import type { DeliveryAreaOption } from "@/lib/types";
+
+// Order placement: allow a short burst, then throttle to ~1 every 30s per IP.
+const ORDER_LIMIT = { capacity: 5, refillPerMs: 1 / 30000 };
+
+class OutOfStockError extends Error {
+  constructor() {
+    super("Out of stock");
+    this.name = "OutOfStockError";
+  }
+}
 
 export type OrderActionResult =
   | { ok: true; orderNumber: string }
@@ -55,6 +68,17 @@ function fieldErrorsFromZod(error: {
 export async function placeOrder(
   rawInput: unknown,
 ): Promise<OrderActionResult> {
+  // Throttle order submissions per client to curb spam/abuse.
+  const ip = getClientKey(await headers());
+  const limit = consume(`order:${ip}`, ORDER_LIMIT);
+  if (!limit.allowed) {
+    const seconds = Math.max(1, Math.ceil(limit.retryAfterMs / 1000));
+    return {
+      ok: false,
+      error: `Too many order attempts. Please try again in ${seconds}s.`,
+    };
+  }
+
   const parsed = checkoutFormSchema.safeParse(rawInput);
 
   if (!parsed.success) {
@@ -114,21 +138,66 @@ export async function placeOrder(
 
   const orderNumber = await generateUniqueOrderNumber();
 
-  await prisma.order.create({
-    data: {
-      orderNumber,
-      customerName: input.customerName,
-      customerPhone: input.customerPhone,
-      deliveryAddress: input.deliveryAddress,
-      deliveryArea: deliveryArea.name,
-      deliveryFee: deliveryArea.deliveryFee,
-      subtotal,
-      total,
-      notes: input.notes ?? null,
-      items: {
-        create: orderItems,
-      },
-    },
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Race-safe stock decrement: the conditional `where` ensures we never
+      // oversell even under concurrent checkouts. If any item can't be
+      // satisfied, throwing rolls back the whole transaction.
+      for (const item of orderItems) {
+        const { count } = await tx.product.updateMany({
+          where: { id: item.productId, stockQty: { gte: item.quantity } },
+          data: { stockQty: { decrement: item.quantity } },
+        });
+        if (count !== 1) {
+          throw new OutOfStockError();
+        }
+      }
+
+      await tx.order.create({
+        data: {
+          orderNumber,
+          customerName: input.customerName,
+          customerPhone: input.customerPhone,
+          deliveryAddress: input.deliveryAddress,
+          deliveryArea: deliveryArea.name,
+          deliveryFee: deliveryArea.deliveryFee,
+          subtotal,
+          total,
+          notes: input.notes ?? null,
+          items: {
+            create: orderItems,
+          },
+          events: {
+            create: { toStatus: "PENDING", note: "Order placed by customer." },
+          },
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof OutOfStockError) {
+      return {
+        ok: false,
+        error: "One or more items just went out of stock. Please review your cart.",
+      };
+    }
+    throw error;
+  }
+
+  // Fire-and-forget admin notifications; never block the customer response.
+  void notifyNewOrder({
+    orderNumber,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    deliveryArea: deliveryArea.name,
+    deliveryAddress: input.deliveryAddress,
+    subtotal,
+    deliveryFee: deliveryArea.deliveryFee,
+    total,
+    items: orderItems.map((item) => ({
+      name: item.productName,
+      quantity: item.quantity,
+      lineTotal: item.lineTotal,
+    })),
   });
 
   return { ok: true, orderNumber };

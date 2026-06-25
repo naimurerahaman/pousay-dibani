@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import { type OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
@@ -56,6 +57,7 @@ const productSchema = z.object({
   imageUrl: z.string().trim().url("Image URL must be a valid URL."),
   categoryId: z.string().trim().min(1, "Choose a category."),
   stockStatus: z.enum(["IN_STOCK", "LIMITED", "OUT_OF_STOCK"]),
+  stockQty: z.coerce.number().int().min(0, "Stock quantity cannot be negative."),
   isActive: z.boolean(),
   isFeatured: z.boolean(),
 });
@@ -349,10 +351,61 @@ export async function deleteDeliveryArea(id: string): Promise<AdminActionResult>
   return { ok: true };
 }
 
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Enter your current password."),
+    newPassword: z
+      .string()
+      .min(12, "Use at least 12 characters.")
+      .max(200),
+    confirmPassword: z.string().min(1, "Confirm your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
+export async function changeAdminPassword(
+  rawInput: unknown,
+): Promise<AdminActionResult> {
+  const admin = await requireAdmin();
+
+  const parsed = changePasswordSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Please fix the highlighted fields.",
+      fieldErrors: fieldErrorsFromZod(parsed.error),
+    };
+  }
+
+  const record = await prisma.adminUser.findUnique({ where: { id: admin.id } });
+  if (!record) {
+    return { ok: false, error: "Admin account not found." };
+  }
+
+  const ok = await bcrypt.compare(parsed.data.currentPassword, record.passwordHash);
+  if (!ok) {
+    return {
+      ok: false,
+      error: "Current password is incorrect.",
+      fieldErrors: { currentPassword: "Incorrect password." },
+    };
+  }
+
+  const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
+  await prisma.adminUser.update({
+    where: { id: admin.id },
+    data: { passwordHash },
+  });
+
+  return { ok: true };
+}
+
 export async function updateOrderStatus(
   rawInput: unknown,
 ): Promise<AdminActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const parsed = orderStatusSchema.safeParse(rawInput);
   if (!parsed.success) {
@@ -363,14 +416,50 @@ export async function updateOrderStatus(
     };
   }
 
-  const existing = await prisma.order.findUnique({ where: { id: parsed.data.orderId } });
+  const existing = await prisma.order.findUnique({
+    where: { id: parsed.data.orderId },
+    include: { items: true },
+  });
   if (!existing) {
     return { ok: false, error: "Order not found." };
   }
 
-  await prisma.order.update({
-    where: { id: parsed.data.orderId },
-    data: { status: parsed.data.status as OrderStatus },
+  const fromStatus = existing.status as OrderStatus;
+  const toStatus = parsed.data.status as OrderStatus;
+
+  if (fromStatus === toStatus) {
+    return { ok: true };
+  }
+
+  // Cancelling a not-yet-cancelled order returns its reserved stock.
+  const shouldRevertStock =
+    toStatus === "CANCELLED" && fromStatus !== "CANCELLED";
+
+  await prisma.$transaction(async (tx) => {
+    if (shouldRevertStock) {
+      for (const item of existing.items) {
+        if (item.productId) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stockQty: { increment: item.quantity } },
+          });
+        }
+      }
+    }
+
+    await tx.order.update({
+      where: { id: parsed.data.orderId },
+      data: {
+        status: toStatus,
+        events: {
+          create: {
+            fromStatus,
+            toStatus,
+            actorEmail: admin.email ?? null,
+          },
+        },
+      },
+    });
   });
 
   revalidatePath("/admin/orders");

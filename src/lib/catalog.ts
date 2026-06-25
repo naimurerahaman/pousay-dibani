@@ -3,7 +3,10 @@ import type { Product, ProductCategory, StockStatus } from "@/lib/types";
 
 export { formatTaka } from "@/lib/format";
 
-function toStockStatus(status: string): StockStatus {
+// Effective availability combines the manual display status with the numeric
+// stock count: zero stock is always "sold out", regardless of stored status.
+function toStockStatus(status: string, stockQty: number): StockStatus {
+  if (stockQty <= 0) return "out_of_stock";
   switch (status) {
     case "LIMITED":
       return "limited";
@@ -32,6 +35,7 @@ type ProductRow = {
   unit: string;
   imageUrl: string;
   stockStatus: string;
+  stockQty: number;
   isActive: boolean;
   isFeatured: boolean;
   categoryId: string;
@@ -56,7 +60,7 @@ function toProduct(row: ProductRow): Product {
     unit: row.unit,
     imageUrl: row.imageUrl,
     categoryId: row.categoryId,
-    stockStatus: toStockStatus(row.stockStatus),
+    stockStatus: toStockStatus(row.stockStatus, row.stockQty),
     isFeatured: row.isFeatured,
   };
 }

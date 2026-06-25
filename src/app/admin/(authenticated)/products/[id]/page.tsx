@@ -34,6 +34,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
       imageUrl: String(formData.get("imageUrl") ?? ""),
       categoryId: String(formData.get("categoryId") ?? ""),
       stockStatus: String(formData.get("stockStatus") ?? "IN_STOCK"),
+      stockQty: String(formData.get("stockQty") ?? "0"),
       isActive: formData.get("isActive") === "on",
       isFeatured: formData.get("isFeatured") === "on",
     });
@@ -56,6 +57,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
         imageUrl: product.imageUrl,
         categoryId: product.categoryId,
         stockStatus: product.stockStatus,
+        stockQty: product.stockQty,
         isActive: product.isActive,
         isFeatured: product.isFeatured,
       }}

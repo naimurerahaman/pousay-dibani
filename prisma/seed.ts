@@ -19,6 +19,7 @@ type ProductSeed = {
   unit: string;
   imageUrl: string;
   stockStatus: "IN_STOCK" | "LIMITED" | "OUT_OF_STOCK";
+  stockQty?: number;
   isActive: boolean;
   isFeatured: boolean;
   categoryId: string;
@@ -233,6 +234,14 @@ async function seedCatalog(prisma: PrismaClient) {
 
   console.log("Seeding products...");
   for (const product of products) {
+    // Default starting stock derived from the display status when not set.
+    const stockQty =
+      product.stockQty ??
+      (product.stockStatus === "OUT_OF_STOCK"
+        ? 0
+        : product.stockStatus === "LIMITED"
+          ? 8
+          : 50);
     await prisma.product.upsert({
       where: { id: product.id },
       update: {
@@ -243,11 +252,12 @@ async function seedCatalog(prisma: PrismaClient) {
         unit: product.unit,
         imageUrl: product.imageUrl,
         stockStatus: product.stockStatus,
+        stockQty,
         isActive: product.isActive,
         isFeatured: product.isFeatured,
         categoryId: product.categoryId,
       },
-      create: product,
+      create: { ...product, stockQty },
     });
   }
 

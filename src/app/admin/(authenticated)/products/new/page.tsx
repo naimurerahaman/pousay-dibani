@@ -22,6 +22,7 @@ export default async function NewProductPage() {
       imageUrl: String(formData.get("imageUrl") ?? ""),
       categoryId: String(formData.get("categoryId") ?? ""),
       stockStatus: String(formData.get("stockStatus") ?? "IN_STOCK"),
+      stockQty: String(formData.get("stockQty") ?? "0"),
       isActive: formData.get("isActive") === "on",
       isFeatured: formData.get("isFeatured") === "on",
     });
@@ -39,6 +40,7 @@ export default async function NewProductPage() {
         imageUrl: "",
         categoryId: categories[0]?.id ?? "",
         stockStatus: "IN_STOCK",
+        stockQty: 0,
         isActive: true,
         isFeatured: false,
       }}

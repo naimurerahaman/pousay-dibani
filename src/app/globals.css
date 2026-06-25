@@ -57,6 +57,18 @@ a {
   text-decoration: none;
 }
 
+/* Visible keyboard-focus indicator for interactive elements (a11y). */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 button,
 input,
 select,
@@ -1396,6 +1408,33 @@ a.site-footer__contact-item:hover {
   padding: 20px;
 }
 
+.order-timeline {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-timeline__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 14px;
+  border-left: 2px solid var(--border);
+}
+
+.order-timeline__time {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.order-timeline__body {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 .admin-metric-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1898,6 +1937,12 @@ a.site-footer__contact-item:hover {
   background: rgb(227 161 60 / 12%);
   color: #ecbf7d;
   border-color: rgb(227 161 60 / 35%);
+}
+
+.form-banner--success {
+  background: rgb(52 207 126 / 12%);
+  color: #6fe0a6;
+  border-color: rgb(52 207 126 / 35%);
 }
 
 .location-picker__option--selected {

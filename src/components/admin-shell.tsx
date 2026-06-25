@@ -12,6 +12,7 @@ import {
   MapPinned,
   Package,
   Tag,
+  UserCog,
 } from "lucide-react";
 import { useTransition, type ReactNode } from "react";
 
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { href: "/admin/products", label: "Products", icon: Boxes },
   { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/delivery-areas", label: "Delivery areas", icon: MapPinned },
+  { href: "/admin/account", label: "Account", icon: UserCog },
 ];
 
 type AdminShellProps = {

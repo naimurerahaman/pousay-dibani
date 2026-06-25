@@ -14,6 +14,7 @@ type ProductFormValues = {
   imageUrl: string;
   categoryId: string;
   stockStatus: "IN_STOCK" | "LIMITED" | "OUT_OF_STOCK";
+  stockQty: number;
   isActive: boolean;
   isFeatured: boolean;
 };
@@ -183,6 +184,20 @@ export function ProductForm({
               </option>
             ))}
           </select>
+        </label>
+        <label className="field">
+          <span>Stock quantity</span>
+          <input
+            name="stockQty"
+            type="number"
+            min={0}
+            step={1}
+            defaultValue={initial.stockQty}
+            required
+          />
+          {fieldErrors.stockQty ? (
+            <span className="field-error">{fieldErrors.stockQty}</span>
+          ) : null}
         </label>
 
         <label className="field field--checkbox">

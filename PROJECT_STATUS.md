@@ -59,7 +59,9 @@ migrated and seeded. The storefront and admin both serve real data.
   `countries_tags_en=Bangladesh`), keeps only clean items, maps them into
   categories (Fresh, Snacks & Drinks, Dairy, Household), and upserts by slug.
   Adds a curated staples backbone (rice, oil, daal, atta, sugar, salt, onion,
-  potato, etc.). **Prices are placeholders — review in `/admin/products`.**
+  potato, etc.). **Prices were placeholders; they are now synced from Shwapno via
+  `npm run scrape:prices` (1025/1081 matched by image id). The ~51 unmatched
+  remain in `scrap/price-review.csv` for manual review in `/admin/products`.**
   `node scripts/import-grocery.mjs --dry-run` previews without touching the DB.
   `images.openfoodfacts.org` was added to `next.config.ts` `remotePatterns` +
   CSP `img-src` so the photos render. (Run the importer against the prod DB the
@@ -342,6 +344,15 @@ This is explicitly listed as a stretch goal in section 8 below.
 ---
 
 ## 7. Known issues / sharp edges
+
+> **Update — production hardening pass.** The following were resolved and shipped:
+> real catalog prices (Shwapno image-id sync), numeric inventory with
+> decrement-on-order + revert-on-cancel, new-order notifications (Resend email +
+> Telegram), order-submission rate limiting, an order audit-log timeline, admin
+> password change + CLI reset, process-level error hooks via
+> `src/instrumentation.ts`, an env-driven footer support contact (no more
+> placeholder email), a keyboard focus-visible a11y pass, and Vitest unit tests
+> (`npm test`). The remaining items below are still open by choice.
 
 These are intentional shortcuts taken in the MVP. They should be addressed before
 broad rollout but are not blockers for the MVP.

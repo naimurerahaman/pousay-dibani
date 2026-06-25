@@ -1,14 +1,30 @@
 /**
- * Process-level error hooks. Import this from a server entrypoint so it
- * runs once when the server starts.
- *
- * Currently: no-op (Vercel's runtime logs unhandled errors automatically).
- * Future: hook in `report()` for Sentry forwarding.
+ * Process-level error hooks. Invoked once from `src/instrumentation.ts` when the
+ * server starts (Node runtime only). Routes otherwise-unhandled errors through
+ * `report()` so they land in structured logs (and Sentry if configured).
  */
 
+import { report } from "@/lib/monitoring";
+
+let installed = false;
+
 export function installErrorHooks() {
-  // Reserved for future Sentry/error monitoring wiring.
-  // Example:
-  //   process.on("unhandledRejection", (reason) => report({ message: "unhandledRejection", error: reason }));
-  //   process.on("uncaughtException", (error) => report({ message: "uncaughtException", error }));
+  if (installed) return;
+  installed = true;
+
+  process.on("unhandledRejection", (reason) => {
+    void report({
+      message: "unhandledRejection",
+      severity: "error",
+      error: reason,
+    });
+  });
+
+  process.on("uncaughtException", (error) => {
+    void report({
+      message: "uncaughtException",
+      severity: "error",
+      error,
+    });
+  });
 }

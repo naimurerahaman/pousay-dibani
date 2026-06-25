@@ -13,6 +13,12 @@ export function SiteFooter() {
 
   const year = new Date().getFullYear();
 
+  // Real contact details come from env; fall back to the known phone number.
+  const supportPhone =
+    process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? "+880 1334-186886";
+  const supportPhoneHref = `tel:${supportPhone.replace(/[^+\d]/g, "")}`;
+  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
+
   return (
     <footer className="site-footer">
       <div className="site-footer__inner">
@@ -43,17 +49,19 @@ export function SiteFooter() {
         <div>
           <h4>Contact</h4>
           <div className="site-footer__contact">
-            <a className="site-footer__contact-item" href="tel:+8801334186886">
+            <a className="site-footer__contact-item" href={supportPhoneHref}>
               <Phone size={16} aria-hidden="true" />
-              +880 1334-186886
+              {supportPhone}
             </a>
-            <a
-              className="site-footer__contact-item"
-              href="mailto:support@pousaydibani.com"
-            >
-              <Mail size={16} aria-hidden="true" />
-              support@pousaydibani.com
-            </a>
+            {supportEmail ? (
+              <a
+                className="site-footer__contact-item"
+                href={`mailto:${supportEmail}`}
+              >
+                <Mail size={16} aria-hidden="true" />
+                {supportEmail}
+              </a>
+            ) : null}
             <span className="site-footer__contact-item">
               <Clock3 size={16} aria-hidden="true" />
               Open daily — delivery till 11:59 PM

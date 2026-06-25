@@ -27,7 +27,10 @@ export default async function AdminOrderDetailPage({ params }: AdminOrderDetailP
   const { id } = await params;
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { items: true },
+    include: {
+      items: true,
+      events: { orderBy: { createdAt: "asc" } },
+    },
   });
 
   if (!order) {
@@ -127,6 +130,32 @@ export default async function AdminOrderDetailPage({ params }: AdminOrderDetailP
       </div>
 
       <AdminOrderStatusForm orderId={order.id} initialStatus={order.status} action={action} />
+
+      <div className="admin-card">
+        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>History</h2>
+        {order.events.length === 0 ? (
+          <p className="muted" style={{ marginTop: 8 }}>
+            No recorded events yet.
+          </p>
+        ) : (
+          <ul className="order-timeline">
+            {order.events.map((event) => (
+              <li key={event.id} className="order-timeline__item">
+                <span className="order-timeline__time">
+                  {formatDate(event.createdAt)}
+                </span>
+                <span className="order-timeline__body">
+                  {event.fromStatus
+                    ? `${event.fromStatus} → ${event.toStatus}`
+                    : event.toStatus}
+                  {event.note ? ` · ${event.note}` : ""}
+                  {event.actorEmail ? ` · ${event.actorEmail}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </>
   );
 }

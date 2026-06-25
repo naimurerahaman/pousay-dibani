@@ -35,6 +35,7 @@ model Product {
   unit        String
   imageUrl    String
   stockStatus StockStatus @default(IN_STOCK)
+  stockQty    Int         @default(0)
   isActive    Boolean     @default(true)
   isFeatured  Boolean     @default(false)
   categoryId  String
@@ -72,12 +73,26 @@ model Order {
   status          OrderStatus @default(PENDING)
   notes           String?
   items           OrderItem[]
+  events          OrderEvent[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   @@index([customerPhone])
   @@index([status])
   @@index([createdAt])
+}
+
+model OrderEvent {
+  id         String       @id @default(cuid())
+  orderId    String
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  actorEmail String?
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId])
 }
 
 model OrderItem {

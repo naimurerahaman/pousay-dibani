@@ -282,7 +282,8 @@ async function main() {
         categoryId: it.categoryId,
       };
       const existing = await prisma.product.findUnique({ where: { slug: it.slug }, select: { id: true } });
-      await prisma.product.upsert({ where: { slug: it.slug }, update: data, create: data });
+      // Seed a starting stock on first insert; never clobber admin-adjusted stock on re-import.
+      await prisma.product.upsert({ where: { slug: it.slug }, update: data, create: { ...data, stockQty: 50 } });
       if (existing) updated++;
       else created++;
     }

@@ -86,8 +86,25 @@ Required variables:
 | `ADMIN_EMAIL` | Initial admin email used by the seed script. |
 | `ADMIN_PASSWORD` | Initial admin password used by the seed script. Use a strong value in production. |
 | `SENTRY_DSN` | Optional server-side error reporting endpoint. |
+| `RESEND_API_KEY`, `ORDER_NOTIFY_TO`, `ORDER_NOTIFY_FROM` | Optional. Email new-order alerts to the admin via Resend. |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Optional. Telegram new-order alerts. |
+| `NEXT_PUBLIC_SUPPORT_EMAIL`, `NEXT_PUBLIC_SUPPORT_PHONE` | Optional. Storefront footer contact details. |
 
 Never commit `.env` or real secrets.
+
+### Order notifications
+
+When a customer checks out, the admin can be alerted by **email (Resend)** and/or
+**Telegram**. Both channels are best-effort and never block checkout — if their
+env vars are unset, that channel is silently skipped. See `.env.example` for setup.
+
+### Inventory
+
+Products carry a numeric `stockQty`. Placing an order decrements stock atomically
+(no overselling under concurrent checkouts); cancelling an order in the admin
+returns the stock. A product shows as sold out when `stockQty` reaches 0 or its
+status is set to `OUT_OF_STOCK`. After the inventory migration, run
+`npm run backfill:stock` once to seed stock for pre-existing products.
 
 ### 3. Apply database migrations
 
@@ -124,6 +141,10 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run prisma:migrate` | Run Prisma migrations in development. |
 | `npm run prisma:seed` | Seed catalog, delivery areas, and admin account. |
 | `npm run prisma:studio` | Open Prisma Studio. |
+| `npm run scrape:prices` | Match catalog products to Shwapno by image id and refresh prices. Dry-run by default; add `-- --apply` to write. |
+| `npm run backfill:stock` | Give existing products a starting `stockQty` (one-time after the inventory migration). |
+| `npm run reset:admin-password` | Reset an admin password from the CLI (lockout recovery). |
+| `npm test` | Run the Vitest unit tests. |
 | `npm run smoke` | Smoke-test key routes against a running app. |
 
 ## Database Notes
@@ -218,13 +239,24 @@ pousay-dibani/
 
 ## Roadmap
 
+Done since the initial MVP:
+
+- ✅ Email + Telegram notifications for new orders
+- ✅ Inventory tracking (decrement on order, revert on cancel)
+- ✅ Audit log (timeline) for order status changes
+- ✅ Real catalog prices synced from source
+- ✅ Admin password change + CLI reset
+- ✅ Order-submission rate limiting
+- ✅ Unit tests for cart/order/rate-limit logic
+
+Still open:
+
 - Product image upload through Supabase Storage or another media provider
 - Customer accounts and order history
-- Email or SMS notifications for new orders
 - Payment integration for bKash, Nagad, or another provider
 - Rider/delivery assignment workflow
-- Audit log for order status changes
-- Automated tests for checkout and admin workflows
+- Shared (Redis/KV) rate-limit store for multi-instance deploys
+- End-to-end tests for checkout and admin workflows
 
 ## License
 

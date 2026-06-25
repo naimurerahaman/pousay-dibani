@@ -221,7 +221,8 @@ async function main() {
         unit: p.unit, imageUrl: p.imageUrl, stockStatus: p.stockStatus,
         isActive: p.isActive, isFeatured: p.isFeatured, categoryId: p.categoryId,
       };
-      await prisma.product.upsert({ where: { slug: p.slug }, update: data, create: data });
+      // Seed a starting stock on first insert; never clobber admin-adjusted stock on re-import.
+      await prisma.product.upsert({ where: { slug: p.slug }, update: data, create: { ...data, stockQty: 50 } });
       if (++i % 100 === 0) console.log(`  ...${i}/${products.length}`);
     }
 
